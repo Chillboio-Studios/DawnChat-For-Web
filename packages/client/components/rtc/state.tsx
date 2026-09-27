@@ -225,7 +225,9 @@ class Voice {
       videoCaptureDefaults: {
         // TODO: Support higher resolutions based on limits
         resolution: VideoPresets.h720.resolution,
-        deviceId: this.#settings.preferredVideoDevice,
+        deviceId: this.device.isMobile
+          ? undefined
+          : this.#settings.preferredVideoDevice,
       },
       publishDefaults: {
         videoEncoding: VideoPresets.h720.encoding,
