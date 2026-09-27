@@ -16,7 +16,7 @@ import { useQuery } from "@tanstack/solid-query";
 import { styled } from "styled-system/jsx";
 
 import { useClient } from "@revolt/client";
-import { debounce, useDevice } from "@revolt/common";
+import { CONFIGURATION, debounce, useDevice } from "@revolt/common";
 import { useInstance } from "@revolt/instance";
 import { useState } from "@revolt/state";
 import {
@@ -53,12 +53,37 @@ type GifResult = {
   media_formats: Record<"webm" | "tinywebm", { url: string }>;
 };
 
+type GifProvider = "gifbox" | "klipy";
+
+type KlipyCategory = {
+  category: string;
+  query: string;
+  preview_url: string;
+};
+
+type KlipyGif = {
+  slug?: string;
+  title?: string;
+  type?: string;
+  file?: {
+    sm?: { webm?: { url: string } };
+    md?: { webm?: { url: string } };
+    hd?: { webm?: { url: string } };
+  };
+};
+
+type KlipyResponse<T> = {
+  result: boolean;
+  data: T;
+};
+
 const FilterContext = createContext<(value: string) => void>();
 
 export function GifPicker() {
   const { isMobile } = useDevice();
   const [filter, setFilter] = createSignal("");
   const [debouncedFilter, setDebouncedFilter] = createSignal("");
+  const [provider, setProvider] = createSignal<GifProvider>("gifbox");
 
   const clearFilter = () => {
     setFilter("");
@@ -73,7 +98,10 @@ export function GifPicker() {
 
   return (
     <Stack>
-      <GifboxExplainer />
+      <Show when={provider() === "gifbox"}>
+        <GifboxExplainer />
+      </Show>
+      <ProviderTabs provider={provider()} onChange={setProvider} />
       <SearchArea>
         <Show when={filter()}>
           <span
@@ -95,23 +123,36 @@ export function GifPicker() {
         <TextField
           autoFocus={!isMobile}
           variant="outlined"
-          placeholder="Search for GIFs..."
+          placeholder={
+            provider() === "klipy" ? "Search KLIPY" : "Search for GIFs..."
+          }
           value={filter()}
           onInput={(e) => setFilter(e.currentTarget.value)}
         />
       </SearchArea>
       <Suspense fallback={<Loader />}>
-        <Switch
+        <Show
+          when={debouncedFilterLowercase()}
           fallback={
-            <FilterContext.Provider value={setFilter}>
-              <Categories />
-            </FilterContext.Provider>
+            <Show
+              when={provider() === "klipy"}
+              fallback={
+                <FilterContext.Provider value={setFilter}>
+                  <Categories />
+                </FilterContext.Provider>
+              }
+            >
+              <KlipyCategories onSelect={setFilter} />
+            </Show>
           }
         >
-          <Match when={debouncedFilterLowercase()}>
-            <GifSearch query={debouncedFilterLowercase()} />
-          </Match>
-        </Switch>
+          <Show
+            when={provider() === "klipy"}
+            fallback={<GifSearch query={debouncedFilterLowercase()} />}
+          >
+            <KlipySearch query={debouncedFilterLowercase()} />
+          </Show>
+        </Show>
       </Suspense>
     </Stack>
   );
@@ -124,6 +165,40 @@ const Stack = styled("div", {
     display: "flex",
     flexDirection: "column",
     gap: "var(--gap-md)",
+  },
+});
+
+function ProviderTabs(props: {
+  provider: GifProvider;
+  onChange: (provider: GifProvider) => void;
+}) {
+  return (
+    <ProviderTabList role="tablist" aria-label="GIF provider">
+      <Button
+        role="tab"
+        aria-selected={props.provider === "gifbox"}
+        variant={props.provider === "gifbox" ? "filled" : "outlined"}
+        onPress={() => props.onChange("gifbox")}
+      >
+        Gifbox
+      </Button>
+      <Button
+        role="tab"
+        aria-selected={props.provider === "klipy"}
+        variant={props.provider === "klipy" ? "filled" : "outlined"}
+        onPress={() => props.onChange("klipy")}
+      >
+        KLIPY
+      </Button>
+    </ProviderTabList>
+  );
+}
+
+const ProviderTabList = styled("div", {
+  base: {
+    display: "flex",
+    gap: "var(--gap-sm)",
+    paddingInline: "var(--gap-md)",
   },
 });
 
@@ -401,6 +476,95 @@ function Categories() {
   );
 }
 
+function KlipyCategories(props: { onSelect: (query: string) => void }) {
+  const categories = useQuery<KlipyResponse<{ categories: KlipyCategory[] }>>(
+    () => ({
+      queryKey: ["klipyGifCategories"],
+      enabled: Boolean(CONFIGURATION.KLIPY_API_KEY),
+      queryFn: async ({ signal }) => {
+        const response = await fetch(
+          `https://api.klipy.com/api/v1/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/categories?locale=en_US`,
+          { signal },
+        );
+        if (!response.ok)
+          throw new Error(`KLIPY categories failed: ${response.status}`);
+        return response.json();
+      },
+      refetchOnReconnect: false,
+      refetchOnWindowFocus: false,
+    }),
+  );
+
+  return (
+    <Show when={CONFIGURATION.KLIPY_API_KEY} fallback={<KlipyUnavailable />}>
+      <Scroller>
+        <CategoryGrid role="list">
+          <Category
+            trending
+            role="listitem"
+            tabIndex={0}
+            onClick={() => props.onSelect("trending")}
+          >
+            <Label>Trending GIFs</Label>
+          </Category>
+          <For each={categories.data?.data.categories ?? []}>
+            {(category) => (
+              <Category
+                role="listitem"
+                tabIndex={0}
+                style={{ "background-image": `url("${category.preview_url}")` }}
+                onClick={() => props.onSelect(category.query)}
+              >
+                <Label>{category.category}</Label>
+              </Category>
+            )}
+          </For>
+        </CategoryGrid>
+        <KlipyAttribution />
+      </Scroller>
+    </Show>
+  );
+}
+
+function KlipyUnavailable() {
+  return (
+    <Centered>
+      <Text class="title" size="small">
+        KLIPY is not configured
+      </Text>
+      <ExplainerBody>
+        Add the public VITE_KLIPY_API_KEY to the web client environment.
+      </ExplainerBody>
+      <KlipyAttribution />
+    </Centered>
+  );
+}
+
+function KlipyAttribution() {
+  return (
+    <KlipyCredit>
+      <a href="https://klipy.com" target="_blank" rel="noopener noreferrer">
+        Powered by KLIPY
+      </a>
+    </KlipyCredit>
+  );
+}
+
+const KlipyCredit = styled("div", {
+  base: {
+    paddingBlock: "var(--gap-sm)",
+    textAlign: "center",
+    ...typography.raw({ class: "label", size: "small" }),
+    color: "var(--md-sys-color-on-surface-variant)",
+
+    "& a": {
+      color: "inherit",
+      textDecoration: "underline",
+      textUnderlineOffset: "2px",
+    },
+  },
+});
+
 const CategoryGrid = styled("div", {
   base: {
     display: "grid",
@@ -563,6 +727,122 @@ function GifSearch(props: { query: string }) {
     </Show>
   );
 }
+
+function KlipySearch(props: { query: string }) {
+  const { onMessage } = useContext(CompositionMediaPickerContext);
+  const query = () => props.query;
+  const isTrending = () => query() === "trending";
+
+  const search = useQuery<KlipyResponse<{ data: KlipyGif[] }>>(() => ({
+    queryKey: ["klipyGifs", query()],
+    enabled: Boolean(CONFIGURATION.KLIPY_API_KEY),
+    queryFn: async ({ signal }) => {
+      const params = new URLSearchParams({
+        page: "1",
+        per_page: "24",
+        locale: "us",
+        format_filter: "webm",
+        content_filter: "high",
+      });
+      if (!isTrending()) params.set("q", query());
+
+      const endpoint = isTrending() ? "trending" : "search";
+      const response = await fetch(
+        `https://api.klipy.com/api/v1/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/${endpoint}?${params}`,
+        { signal },
+      );
+      if (!response.ok)
+        throw new Error(`KLIPY search failed: ${response.status}`);
+
+      const result = (await response.json()) as KlipyResponse<{
+        data: KlipyGif[];
+      }>;
+      if (!result.result) throw new Error("KLIPY search failed");
+      return result;
+    },
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    staleTime: 0,
+    gcTime: 0,
+  }));
+
+  return (
+    <Show when={CONFIGURATION.KLIPY_API_KEY} fallback={<KlipyUnavailable />}>
+      <Show
+        when={search.data?.data.data.length}
+        fallback={
+          <Centered>
+            <Text class="title" size="small">
+              No KLIPY GIFs found
+            </Text>
+            <KlipyAttribution />
+          </Centered>
+        }
+      >
+        <Scroller>
+          <Masonry role="list">
+            <For each={search.data?.data.data ?? []}>
+              {(gif) => {
+                const mediaUrl =
+                  gif.file?.sm?.webm?.url ??
+                  gif.file?.md?.webm?.url ??
+                  gif.file?.hd?.webm?.url;
+
+                return (
+                  <Show
+                    when={mediaUrl}
+                    fallback={
+                      <KlipyResultFallback role="listitem">
+                        {gif.title ?? "KLIPY media"}
+                      </KlipyResultFallback>
+                    }
+                  >
+                    <GifTile
+                      role="listitem"
+                      tabIndex={0}
+                      onClick={() => {
+                        if (gif.slug) {
+                          void fetch(
+                            `https://api.klipy.com/api/v1/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/share/${encodeURIComponent(gif.slug)}`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                q: isTrending() ? "" : query(),
+                              }),
+                            },
+                          ).catch(() => undefined);
+                        }
+                        onMessage(mediaUrl!);
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+                      }}
+                    >
+                      <video playsinline loop autoplay muted src={mediaUrl} />
+                    </GifTile>
+                  </Show>
+                );
+              }}
+            </For>
+          </Masonry>
+          <KlipyAttribution />
+        </Scroller>
+      </Show>
+    </Show>
+  );
+}
+
+const KlipyResultFallback = styled("div", {
+  base: {
+    ...tileInteractive,
+    marginBottom: "var(--gap-sm)",
+    padding: "var(--gap-sm)",
+    color: "var(--md-sys-color-on-surface-variant)",
+  },
+});
 
 const ButtonSpacing = styled("div", {
   base: {

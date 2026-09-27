@@ -61,6 +61,8 @@ export default {
   DEV_PROXY_URL: getEnv("VITE_DEV_PROXY_URL"),
   /** Gifbox server override for development */
   DEV_GIFBOX_URL: getEnv("VITE_DEV_GIFBOX_URL"),
+  /** Public Klipy app key for direct client requests */
+  KLIPY_API_KEY: getEnv("VITE_KLIPY_API_KEY"),
   /**
    * RNNoise worklet CDN host location. Defaults to blank, which uses the url provided by the livekit-rnnoise-processor package.
    */
