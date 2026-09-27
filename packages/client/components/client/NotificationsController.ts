@@ -73,6 +73,12 @@ export function useNotifications() {
       } else {
         await enablePushSubscription();
       }
+    } else if (
+      settings.pushNotificationsState === "allowed" &&
+      supportsNotification &&
+      Notification.permission === "granted"
+    ) {
+      await enablePushSubscription();
     }
   };
 
@@ -143,14 +149,25 @@ async function setUpServiceWorkerSubscription(client: Client) {
     throw "Failed to get service worker";
   }
 
-  const subscription =
-    (await registration.pushManager.getSubscription()) ||
-    (await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: client.configuration!.vapid,
-    }));
+  let subscription = await registration.pushManager.getSubscription();
+  if (subscription) {
+    const applicationServerKey = subscription.options.applicationServerKey;
+    if (
+      !applicationServerKey ||
+      arrayBufferToBase64URL(applicationServerKey) !==
+        arrayBufferToBase64URL(client.configuration.vapid)
+    ) {
+      await subscription.unsubscribe();
+      subscription = null;
+    }
+  }
 
-  client.api.post("/push/subscribe", {
+  subscription ??= await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: client.configuration!.vapid,
+  });
+
+  await client.api.post("/push/subscribe", {
     endpoint: subscription.endpoint,
     p256dh: arrayBufferToBase64URL(
       subscription.getKey("p256dh") || new ArrayBuffer(),
@@ -161,8 +178,11 @@ async function setUpServiceWorkerSubscription(client: Client) {
   });
 }
 
-function arrayBufferToBase64URL(buffer: ArrayBuffer): string {
-  const intArray = new Uint8Array(buffer);
+function arrayBufferToBase64URL(buffer: BufferSource): string {
+  const intArray =
+    buffer instanceof ArrayBuffer
+      ? new Uint8Array(buffer)
+      : new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   return intArray.toBase64({ alphabet: "base64url" });
 }
 
