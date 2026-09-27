@@ -491,6 +491,8 @@ class Voice {
 
       this.sound.playSound("streamEnd");
     } else {
+      if (!this.screenShareSupported) return;
+
       const qualities = this.getEnabledScreenShareQualities();
       let screenPickerQualityName: ScreenShareQualityName | undefined;
       let screenPickerAudio: boolean | undefined;
@@ -695,6 +697,10 @@ class Voice {
 
   get speakingPermission() {
     return !!this.channel()?.havePermission("Speak");
+  }
+
+  get screenShareSupported() {
+    return typeof navigator.mediaDevices?.getDisplayMedia === "function";
   }
 
   private onErr(e: unknown) {

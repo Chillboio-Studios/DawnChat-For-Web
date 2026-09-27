@@ -125,13 +125,17 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
           tooltip: {
             placement: "top",
             content: limits().video
-              ? voice.screenshare()
-                ? t`Stop sharing`
-                : t`Share screen`
+              ? !voice.screenShareSupported && !voice.screenshare()
+                ? t`Screen sharing is not supported by this browser`
+                : voice.screenshare()
+                  ? t`Stop sharing`
+                  : t`Share screen`
               : t`Coming soon! 👀`,
           },
         }}
-        isDisabled={!limits().video}
+        isDisabled={
+          !limits().video || (!voice.screenShareSupported && !voice.screenshare())
+        }
       >
         <Show
           when={!limits().video || voice.screenshare()}
