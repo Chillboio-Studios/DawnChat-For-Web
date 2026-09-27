@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        run: apk add --no-cache bash git
+        run: apk add --no-cache bash git nodejs
 
       - name: Start Docker daemon
         run: |
