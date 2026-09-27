@@ -100,8 +100,9 @@ const Brand = styled("div", {
   base: {
     position: "relative",
     zIndex: 1,
-    width: "132px",
+    width: "148px",
     height: "auto",
+    marginBlockEnd: "var(--gap-md)",
 
     "& svg": {
       width: "100%",
@@ -116,12 +117,13 @@ const Brand = styled("div", {
 
         "@media (max-width: 900px)": {
           display: "block",
-          width: "104px",
+          width: "116px",
+          marginBlockEnd: 0,
           color: "var(--md-sys-color-on-surface)",
         },
 
         "@media (max-width: 460px)": {
-          width: "92px",
+          width: "102px",
         },
       },
     },
