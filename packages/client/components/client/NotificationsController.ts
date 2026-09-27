@@ -152,10 +152,18 @@ async function setUpServiceWorkerSubscription(client: Client) {
   let subscription = await registration.pushManager.getSubscription();
   if (subscription) {
     const applicationServerKey = subscription.options.applicationServerKey;
+    const savedKey =
+      typeof applicationServerKey === "string"
+        ? applicationServerKey
+        : applicationServerKey
+          ? arrayBufferToBase64URL(applicationServerKey)
+          : undefined;
     if (
-      !applicationServerKey ||
-      arrayBufferToBase64URL(applicationServerKey) !==
-        arrayBufferToBase64URL(client.configuration.vapid)
+      !savedKey ||
+      savedKey !==
+        arrayBufferToBase64URL(
+          base64URLToArrayBuffer(client.configuration.vapid),
+        )
     ) {
       await subscription.unsubscribe();
       subscription = null;
@@ -164,7 +172,7 @@ async function setUpServiceWorkerSubscription(client: Client) {
 
   subscription ??= await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: client.configuration!.vapid,
+    applicationServerKey: base64URLToArrayBuffer(client.configuration.vapid),
   });
 
   await client.api.post("/push/subscribe", {
@@ -184,6 +192,20 @@ function arrayBufferToBase64URL(buffer: BufferSource): string {
       ? new Uint8Array(buffer)
       : new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
   return intArray.toBase64({ alphabet: "base64url" });
+}
+
+function base64URLToArrayBuffer(value: string): ArrayBuffer {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+  const binary = atob(padded);
+  const buffer = new ArrayBuffer(binary.length);
+  const bytes = new Uint8Array(buffer);
+
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  return buffer;
 }
 
 /** Exported for the client controller. Don't use this unless you have to. */
