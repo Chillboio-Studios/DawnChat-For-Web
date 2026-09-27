@@ -40,7 +40,8 @@ jobs:
         run: |
           git config --global url."https://deployment:${DEPLOYMENT_TOKEN}@git.chillboiostudios.com/".insteadOf "https://git.chillboiostudios.com/"
           git config --global submodule.fetchJobs 8
-          git submodule update --init --recursive --depth 1
+          git submodule update --init --recursive --depth 1 --checkout
+          test -n "$(find packages/client/assets/web -type f -print -quit)"
           git config --global --unset-all url."https://deployment:${DEPLOYMENT_TOKEN}@git.chillboiostudios.com/".insteadOf
 
       - name: Set image name
