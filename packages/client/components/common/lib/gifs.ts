@@ -7,6 +7,10 @@ const GIF_PROVIDERS = [
   "https://tenor.com",
   "https://giphy.com",
   "https://gifbox.me",
+  "https://klipy.com",
+  "https://static.klipy.com",
+  "https://static1.klipy.com",
+  "https://static2.klipy.com",
 ];
 
 /**

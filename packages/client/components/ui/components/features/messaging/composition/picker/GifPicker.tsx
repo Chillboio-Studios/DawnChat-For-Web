@@ -813,7 +813,11 @@ function KlipySearch(props: { query: string }) {
                             },
                           ).catch(() => undefined);
                         }
-                        onMessage(mediaUrl!);
+                        onMessage(
+                          gif.slug
+                            ? `https://klipy.com/gifs/${encodeURIComponent(gif.slug)}`
+                            : mediaUrl!,
+                        );
                       }}
                       onMouseDown={(e) => {
                         e.preventDefault();
