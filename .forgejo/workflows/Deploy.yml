@@ -1,0 +1,65 @@
+name: Build and Deploy Web Client
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: docker
+
+    container:
+      image: docker:dind
+      options: --privileged
+
+    env:
+      REGISTRY: git.chillboiostudios.com
+      BUILDX_NO_DEFAULT_ATTESTATIONS: 1
+
+    steps:
+      - name: Install dependencies
+        run: apk add --no-cache bash git
+
+      - name: Start Docker daemon
+        run: |
+          dockerd-entrypoint.sh dockerd > /tmp/dockerd.log 2>&1 &
+          timeout 30 sh -c 'until docker info > /dev/null 2>&1; do sleep 1; done' || (cat /tmp/dockerd.log && exit 1)
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.CSTUDIOS_GIT_DEPLOYMENT_TOKEN }}
+          fetch-depth: 1
+          submodules: false
+
+      - name: Checkout submodules
+        env:
+          DEPLOYMENT_TOKEN: ${{ secrets.CSTUDIOS_GIT_DEPLOYMENT_TOKEN }}
+        run: |
+          git config --global url."https://deployment:${DEPLOYMENT_TOKEN}@git.chillboiostudios.com/".insteadOf "https://git.chillboiostudios.com/"
+          git config --global submodule.fetchJobs 8
+          git submodule update --init --recursive --depth 1
+          git config --global --unset-all url."https://deployment:${DEPLOYMENT_TOKEN}@git.chillboiostudios.com/".insteadOf
+
+      - name: Set image name
+        run: |
+          REPO_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=${{ env.REGISTRY }}/${REPO_LOWER}/web" >> "$GITHUB_ENV"
+
+      - name: Log in to Forgejo Container Registry
+        run: echo "${{ secrets.CSTUDIOS_GIT_DEPLOYMENT_TOKEN }}" | docker login "${{ env.REGISTRY }}" -u deployment --password-stdin
+
+      - name: Build and push Docker image
+        run: |
+          set -eo pipefail
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+
+          docker build \
+            --provenance=false \
+            -t "$IMAGE_NAME:latest" \
+            -t "$IMAGE_NAME:$TIMESTAMP" .
+
+          docker push "$IMAGE_NAME:latest"
+          docker push "$IMAGE_NAME:$TIMESTAMP"
