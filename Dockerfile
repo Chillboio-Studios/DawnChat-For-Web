@@ -55,7 +55,7 @@ FROM node:24-alpine
 WORKDIR /app
 
 # Copy the server package and install dependencies
-COPY docker/package.json docker/inject.js ./
+COPY docker/package.json docker/inject.js docker/server.js ./
 RUN npm install --omit=dev
 
 # Copy built static assets stage 1
