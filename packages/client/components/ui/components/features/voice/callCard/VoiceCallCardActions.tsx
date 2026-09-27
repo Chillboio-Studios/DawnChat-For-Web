@@ -9,6 +9,7 @@ import { useVoice } from "@revolt/rtc";
 import { useState } from "@revolt/state";
 import { Button, IconButton } from "@revolt/ui/components/design";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
+import { useMediaDeviceSelect } from "solid-livekit-components";
 
 export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
   const voice = useVoice();
@@ -16,6 +17,25 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
   const navigate = useNavigate();
   const { t } = useLingui();
   const { limits } = useInstance();
+  const cameraDevices = useMediaDeviceSelect({ kind: "videoinput" });
+
+  const switchCamera = async () => {
+    const devices = cameraDevices
+      .devices()
+      .filter((device) => device.deviceId !== "default");
+    if (devices.length < 2) return;
+
+    const currentIndex = devices.findIndex(
+      (device) => device.deviceId === cameraDevices.activeDeviceId(),
+    );
+    const nextDevice = devices[(currentIndex + 1) % devices.length]!;
+
+    try {
+      await cameraDevices.setActiveMediaDevice(nextDevice.deviceId);
+    } catch (error) {
+      console.error("Failed to switch camera", error);
+    }
+  };
 
   return (
     <Actions>
@@ -115,6 +135,28 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
       >
         <Symbol>camera_video</Symbol>
       </IconButton>
+      <Show
+        when={
+          limits().video &&
+          cameraDevices
+            .devices()
+            .filter((device) => device.deviceId !== "default").length > 1
+        }
+      >
+        <IconButton
+          size={props.size}
+          variant="standard"
+          onPress={switchCamera}
+          use:floating={{
+            tooltip: {
+              placement: "top",
+              content: t`Switch camera`,
+            },
+          }}
+        >
+          <Symbol>flip_camera_android</Symbol>
+        </IconButton>
+      </Show>
       <IconButton
         size={props.size}
         variant={limits().video && voice.screenshare() ? "filled" : "tonal"}
@@ -134,7 +176,8 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
           },
         }}
         isDisabled={
-          !limits().video || (!voice.screenShareSupported && !voice.screenshare())
+          !limits().video ||
+          (!voice.screenShareSupported && !voice.screenshare())
         }
       >
         <Show
