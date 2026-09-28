@@ -20,6 +20,7 @@ import FlowDeleteAccount from "@revolt/auth/src/flows/FlowDelete";
 import FlowLogin from "@revolt/auth/src/flows/FlowLogin";
 import FlowResend from "@revolt/auth/src/flows/FlowResend";
 import FlowReset from "@revolt/auth/src/flows/FlowReset";
+import FlowToken from "@revolt/auth/src/flows/FlowToken";
 import FlowVerify from "@revolt/auth/src/flows/FlowVerify";
 import { ClientContext, SoundContext, useClient } from "@revolt/client";
 import { DeviceContext } from "@revolt/common";
@@ -144,12 +145,14 @@ function MountContext(props: { children?: JSX.Element }) {
 
 const routes = () => (
   <Route component={MountContext}>
+    <Route path="/delete/:token" component={FlowDeleteAccount} />
     <Route path="/login" component={AuthPage as never}>
       <Route path="/delete/:token" component={FlowDeleteAccount} />
       <Route path="/check" component={FlowCheck} />
       <Route path="/create" component={FlowCreate} />
       <Route path="/create/:code" component={FlowCreate} />
       <Route path="/auth" component={FlowLogin} />
+      <Route path="/token" component={FlowToken} />
       <Route path="/resend" component={FlowResend} />
       <Route path="/reset" component={FlowReset} />
       <Route path="/verify/:token" component={FlowVerify} />
