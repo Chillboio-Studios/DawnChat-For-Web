@@ -5,7 +5,13 @@ test("shows a working login page", async ({ page }) => {
   await expect(page).toHaveTitle(/Stoat/);
 
   const form = page.locator("form");
-  await expect(form.locator('mdui-text-field[name="email"]')).toBeVisible();
+  const identifier = form.locator('mdui-text-field[name="email"]');
+  await expect(identifier).toBeVisible();
+  await expect(identifier).toHaveAttribute("type", "text");
+  await expect(identifier).toHaveAttribute(
+    "pattern",
+    "token|[^\\s@]+@[^\\s@]+\\.[^\\s@]+",
+  );
   await expect(form.locator('mdui-text-field[name="password"]')).toBeVisible();
   await expect(form.locator('button[type="submit"]')).toBeVisible();
 

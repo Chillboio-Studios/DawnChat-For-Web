@@ -43,7 +43,8 @@ const useFieldConfiguration = () => {
 
   return {
     email: {
-      type: "email" as const,
+      type: "text" as const,
+      pattern: "token|[^\\s@]+@[^\\s@]+\\.[^\\s@]+",
       name: () => t`Email`,
       placeholder: () => t`Please enter your email.`,
       autocomplete: "email",
