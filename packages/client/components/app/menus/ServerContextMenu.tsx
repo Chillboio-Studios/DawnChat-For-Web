@@ -120,7 +120,7 @@ export function ServerContextMenu(props: { server: Server }) {
    */
   function openAdminPanel() {
     window.open(
-      `https://admin.stoatinternal.com/panel/inspect/server/${props.server.id}`,
+      `https://admin.dawn-chat.com/panel/inspect/server/${props.server.id}`,
       "_blank",
     );
   }

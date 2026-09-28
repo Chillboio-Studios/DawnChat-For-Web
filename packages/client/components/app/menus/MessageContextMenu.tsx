@@ -119,7 +119,7 @@ export function MessageContextMenu(props: {
    */
   function openAdminPanel() {
     window.open(
-      `https://admin.stoatinternal.com/panel/inspect/message/${props.message!.id}`,
+      `https://admin.dawn-chat.com/panel/inspect/message/${props.message!.id}`,
       "_blank",
     );
   }
