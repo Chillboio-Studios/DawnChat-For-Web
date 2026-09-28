@@ -52,6 +52,15 @@ import { ServerHome } from "./interface/ServerHome";
 import { ChannelPage } from "./interface/channels/ChannelPage";
 import "./serviceWorkerInterface";
 
+window.addEventListener("vite:preloadError", (event) => {
+  const lastReload = Number(sessionStorage.getItem("vite-preload-reload"));
+  if (Date.now() - lastReload < 30_000) return;
+
+  sessionStorage.setItem("vite-preload-reload", String(Date.now()));
+  event.preventDefault();
+  window.location.reload();
+});
+
 attachDevtoolsOverlay();
 
 /**
