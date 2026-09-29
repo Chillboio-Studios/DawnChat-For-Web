@@ -74,9 +74,9 @@ export function ServerMemberSidebar(props: Props) {
     | { t: 1; member: ServerMember; icon?: never; isOnline: boolean };
 
   const elements = createMemo(() => {
-    const hoistedRoles = props.channel.server!.orderedRoles.filter(
+    const hoistedRoles = props.channel.server?.orderedRoles.filter(
       (role) => role.hoist,
-    );
+    ) ?? [];
 
     const restricted = props.channel.potentiallyRestrictedChannel;
     const byRole: Map<string, { member: ServerMember; displayName: string }[]> =
@@ -343,12 +343,11 @@ function Member(props: {
 
   const timedOut = createIsTimedOut(() => props.member?.timeout);
 
-  const moderationPerms = createMemo(() =>
-    props.member?.server?.member?.hasPermission(
-      props.member!.server! ?? props.group!,
-      "TimeoutMembers",
-    ),
-  );
+  const moderationPerms = createMemo(() => {
+    const server = props.member?.server ?? props.group;
+    if (!server || !props.member?.server?.member) return false;
+    return props.member.server.member.hasPermission(server, "TimeoutMembers");
+  });
 
   const status = () =>
     (props.user ?? props.member?.user)?.statusMessage((s) =>
@@ -401,9 +400,9 @@ function Member(props: {
           <OverflowingText>
             <Row align gap="xs">
               <Username username={user().username} colour={user().colour!} />
-              <Show when={timedOut() && moderationPerms}>
+              <Show when={timedOut() && moderationPerms()}>
                 <Tooltip
-                  content={t`Timed out until ${props.member!.timeout!.toLocaleString()}`}
+                  content={t`Timed out until ${props.member?.timeout?.toLocaleString() ?? ""}`}
                   placement="top"
                 >
                   <Symbol size={14}>timer_off</Symbol>

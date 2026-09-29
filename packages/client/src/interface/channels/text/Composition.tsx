@@ -54,7 +54,7 @@ export function MessageComposition(props: Props) {
   const { openModal } = useModals();
 
   const isTimedOut = createIsTimedOut(
-    () => props.channel.server?.member?.timeout,
+    () => props.channel?.server?.member?.timeout,
   );
 
   createKeybind(KeybindAction.CHAT_JUMP_END, () =>
@@ -321,7 +321,6 @@ export function MessageComposition(props: Props) {
 
   /**
    * Toggle spoiler state for a file
-   * @param fileId File ID
    */
   function toggleSpoiler(fileId: string) {
     state.draft.toggleFileSpoiler(fileId);
