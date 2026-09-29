@@ -12,20 +12,25 @@ WORKDIR /build
 
 # Copy workspace config files for dependency resolution
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-
 COPY packages/ packages/
-
 COPY patches/ patches/
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Configure pnpm network tolerances and mount cache to prevent download timeouts
+RUN pnpm config set fetch-retries 5 \
+    && pnpm config set fetch-retry-mintimeout 20000 \
+    && pnpm config set fetch-retry-maxtimeout 120000 \
+    && pnpm config set fetch-timeout 300000 \
+    && pnpm config set network-concurrency 4
+
+RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # Build sub-dependencies (stoat.js, livekit-components, lingui plugins, panda css etc)
 RUN pnpm --filter stoat.js build && \
-  pnpm --filter solid-livekit-components build && \
-  pnpm --filter client exec lingui compile --typescript && \
-  pnpm --filter client exec node scripts/copyAssets.mjs && \
-  pnpm --filter client exec panda codegen
+    pnpm --filter solid-livekit-components build && \
+    pnpm --filter client exec lingui compile --typescript && \
+    pnpm --filter client exec node scripts/copyAssets.mjs && \
+    pnpm --filter client exec panda codegen
 
 RUN pnpm --filter client exec lingui extract
 RUN pnpm --filter client exec lingui compile --typescript
@@ -40,7 +45,6 @@ ENV VITE_DEV_PROXY_URL=__VITE_PROXY_URL__
 ENV VITE_DEV_GIFBOX_URL=__VITE_GIFBOX_URL__
 ENV VITE_KLIPY_API_KEY=__VITE_KLIPY_API_KEY__
 ENV VITE_RNNOISE_WORKLET_CDN_URL=__VITE_RNNOISE_WORKLET_CDN_URL__
-
 ARG BASE_PATH=/
 ARG PWA_SCOPE
 ENV BASE_PATH=${BASE_PATH}
