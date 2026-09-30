@@ -5,6 +5,7 @@ import { Server } from "stoat.js";
 import { css } from "styled-system/css";
 
 import { useClient, useClientLifecycle } from "@revolt/client";
+import { DAWNCHAT_DONATION_URL } from "@revolt/common/lib/links";
 import { useInstance } from "@revolt/instance";
 import { useUser } from "@revolt/markdown/users";
 import { useModals } from "@revolt/modal";
@@ -135,7 +136,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
           </Text>
           <Show when={window.native}>
             <Text class="label">
-              Stoat for Desktop {window.native.versions.desktop()}
+              DawnChat for Desktop {window.native.versions.desktop()}
             </Text>
             <Text class="label">
               <span
@@ -223,7 +224,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
           ],
         },
         {
-          title: "Stoat",
+          title: "DawnChat",
           entries: [
             {
               id: "bots",
@@ -330,7 +331,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
             {
               href: "https://github.com/stoatchat",
               icon: <MdMemory {...iconSize(20)} />,
-              title: <Trans>Source Code</Trans>,
+              title: <Trans>We are a stoatchat based instance, View Source Code</Trans>,
             },
             {
               id: "advanced",
@@ -338,7 +339,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
               title: <Trans>Advanced</Trans>,
             },
             {
-              href: "https://ko-fi.com/stoatchat",
+              href: DAWNCHAT_DONATION_URL,
               icon: <MdCoffee {...iconSize(20)} />,
               title: <Trans>Donate</Trans>,
             },

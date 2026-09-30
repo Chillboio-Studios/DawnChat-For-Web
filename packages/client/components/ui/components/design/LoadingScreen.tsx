@@ -4,23 +4,14 @@ import { styled } from "styled-system/jsx";
 
 import { useInstance } from "@revolt/instance";
 import Instance from "@revolt/instance/Instance";
+import {
+  DAWNCHAT_STATUS_METRICS_URL,
+  DAWNCHAT_STATUS_URL,
+  DAWNCHAT_TROUBLESHOOTING_URL,
+} from "@revolt/common/lib/links";
 import { Button, CircularProgress, Symbol, Text } from "@revolt/ui";
 
-/**
- * Stoat status page URL
- */
-const STATUS_PAGE_URL = "https://status.stoat.chat";
-
-/**
- * Connection troubleshooting knowledge base article
- */
-const TROUBLESHOOTING_URL =
-  "https://support.stoat.chat/kb/troubleshooting/connection-issues";
-
-/**
- * Status API queried when the client is slow to connect
- */
-const STATUS_API_URL = "https://stoat.chat/-/status";
+const STATUS_API_KEY = "uk2_gIRrQd5Bmz-79uHP-NzeMb1yqUL1kbS2xNGki74T";
 
 /**
  * How long to wait for a proper connection before asking the status API
@@ -32,26 +23,28 @@ const STATUS_PROBE_DELAY = 5_000;
  */
 const TROUBLESHOOTING_DELAY = 10_000;
 
-/**
- * Partial API response we care about
- */
-type StatusResponse = {
-  status?: {
-    current_incident_impact?: string;
-    active_incidents?: {
-      title: string;
-      status: string;
-      incident_at: string;
-    }[];
-  };
-};
+function getDownDawnChatMonitors(metrics: string) {
+  const downMonitors: string[] = [];
+
+  for (const line of metrics.split(/\r?\n/)) {
+    const match = line.match(/^monitor_status\{([^}]*)\}\s+(-?\d+(?:\.\d+)?)/);
+    if (!match || !/(?:^|,)\s*DawnChat\s*=\s*""\s*(?:,|$)/.test(match[1]))
+      continue;
+
+    if (Number(match[2]) !== 0) continue;
+
+    const monitorName = match[1].match(/(?:^|,)\s*monitor_name="((?:\\.|[^"])*)"/);
+    downMonitors.push(monitorName?.[1]?.replace(/\\([\\"])/g, "$1") ?? "Unknown monitor");
+  }
+
+  return downMonitors;
+}
 
 /**
  * Loading screen shown while the client connects for the first time.
  *
- * If the connection does not succeed within {@link STATUS_PROBE_DELAY}, and we
- * are on an eligible origin, the status API is queried and any ongoing incident
- * is shown so the user knows the outage isn't on their end.
+ * If the connection does not succeed within {@link STATUS_PROBE_DELAY}, the
+ * status API is queried for any down DawnChat monitors.
  *
  * Additionally if the connection does not succeed within {@link TROUBLESHOOTING_DELAY},
  * a troubleshooting notice is shown to help the user diagnose their connection issues.
@@ -89,25 +82,25 @@ export function LoadingScreen(props: { isStoat?: boolean }) {
   onMount(() => {
     const controller = new AbortController();
 
-    // Check the status API for an ongoing incident.
+    // Check the status API for down DawnChat monitors.
     const statusTimer = setTimeout(async () => {
-      //TODO Fetch status from current instance backend instead of only stoat.chat
       if (!props.isStoat && !instance?.isStoat) return;
       try {
-        const res = await fetch(STATUS_API_URL, { signal: controller.signal });
-        const data = (await res.json()) as StatusResponse;
+        const res = await fetch(DAWNCHAT_STATUS_METRICS_URL, {
+          signal: controller.signal,
+          headers: {
+            Authorization: `Basic ${btoa(`:${STATUS_API_KEY}`)}`,
+          },
+        });
+        if (!res.ok) throw new Error(`Status request failed: ${res.status}`);
 
-        const impact = data?.status?.current_incident_impact;
-        const active = (data.status?.active_incidents ?? []).filter(
-          (i) => i.status !== "recovered",
-        );
-
-        if (impact && impact !== "operational" && active.length) {
-          const newest = active.reduce((a, b) =>
-            Date.parse(b.incident_at) > Date.parse(a.incident_at) ? b : a,
-          );
-
-          setNotice({ type: "incident", impact, title: newest.title });
+        const downMonitors = getDownDawnChatMonitors(await res.text());
+        if (downMonitors.length) {
+          setNotice({
+            type: "incident",
+            impact: "partial_outage",
+            title: t`Unavailable: ${downMonitors.join(", ")}`,
+          });
         }
       } catch {
         // the troubleshooting timer handles this case
@@ -144,7 +137,7 @@ export function LoadingScreen(props: { isStoat?: boolean }) {
               fill={current.impact === "maintenance"}
               label={impactLabel(current.impact)}
               title={current.title}
-              url={STATUS_PAGE_URL}
+              url={DAWNCHAT_STATUS_URL}
               action={<Trans>View status page</Trans>}
             />
           ) : (
@@ -152,7 +145,7 @@ export function LoadingScreen(props: { isStoat?: boolean }) {
               symbol="wifi_off"
               label={t`This is taking longer than usual.`}
               title={t`You may be experiencing connection issues.`}
-              url={TROUBLESHOOTING_URL}
+              url={DAWNCHAT_TROUBLESHOOTING_URL}
               action={<Trans>Troubleshooting</Trans>}
             />
           )

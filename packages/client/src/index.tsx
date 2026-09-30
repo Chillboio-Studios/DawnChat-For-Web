@@ -47,7 +47,7 @@ import "./index.css";
 import { DevelopmentPage } from "./interface/Development";
 import { Discover } from "./interface/Discover";
 import { Friends } from "./interface/Friends";
-import { HomePage } from "./interface/Home";
+import { HomePage, NotFoundPage } from "./interface/Home";
 import { ServerHome } from "./interface/ServerHome";
 import { ChannelPage } from "./interface/channels/ChannelPage";
 import "./serviceWorkerInterface";
@@ -172,7 +172,9 @@ const routes = () => (
         <Route path="/*" component={ServerHome} />
       </Route>
       <Route path="/channel/:channel/*" component={ChannelPage} />
-      <Route path="/*" component={HomePage} />
+      <Route path="/" component={HomePage} />
+      <Route path="/app" component={HomePage} />
+      <Route path="/*" component={NotFoundPage} />
     </Route>
   </Route>
 );

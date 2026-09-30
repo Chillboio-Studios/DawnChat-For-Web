@@ -4,6 +4,10 @@ import { Trans } from "@lingui/solid/macro";
 import { cva } from "styled-system/css";
 
 import { MessageContextMenu, useMessage } from "@revolt/app";
+import {
+  DAWNCHAT_IN_APP_ORIGINS,
+  INVITE_SHORTENER_ORIGINS,
+} from "@revolt/common/lib/links";
 import { useClient } from "@revolt/client";
 import { DefaultHost, useInstance } from "@revolt/instance";
 import { useModals } from "@revolt/modal";
@@ -46,14 +50,7 @@ const internalLink = cva({
 
 function inAppScope(link: URL, root: string): boolean {
   return (
-    [
-      root,
-      "https://stoat.chat",
-      "https://beta.stoat.chat",
-      "https://old.stoat.chat",
-      "https://revolt.chat",
-      "https://app.revolt.chat",
-    ].includes(link.origin) &&
+    [root, ...DAWNCHAT_IN_APP_ORIGINS].includes(link.origin) &&
     /\/(i|app|home|pwa|dev|invite|bot|friends|server|channel)\/?/.test(
       link.pathname,
     )
@@ -92,7 +89,7 @@ export function RenderAnchor(
     }
 
     // Remap discover links to native links
-    if (url.origin === "https://rvlt.gg" || url.origin === "https://stt.gg") {
+    if (INVITE_SHORTENER_ORIGINS.includes(url.origin as (typeof INVITE_SHORTENER_ORIGINS)[number])) {
       if (/^\/[\w\d]+$/.test(url.pathname)) {
         url = new URL(`/invite${url.pathname}`, instance.origin);
       } else if (url.pathname.startsWith("/discover")) {

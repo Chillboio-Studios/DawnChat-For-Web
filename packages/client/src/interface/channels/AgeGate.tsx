@@ -8,6 +8,8 @@ import { useState } from "@revolt/state";
 import { LAYOUT_SECTIONS } from "@revolt/state/stores/Layout";
 import { Button, Checkbox, CircularProgress, Text, iconSize } from "@revolt/ui";
 
+import { DAWNCHAT_GEOLOCATION_URL } from "@revolt/common/lib/links";
+
 import MdWarning from "@material-design-icons/svg/round/warning.svg?component-solid";
 
 type GeoBlock = {
@@ -35,7 +37,7 @@ export function AgeGate(props: {
   const geoQuery = useQuery(() => ({
     queryKey: ["geoblock"],
     queryFn: async (): Promise<GeoBlock> => {
-      const response = await fetch("https://geo.revolt.chat");
+      const response = await fetch(DAWNCHAT_GEOLOCATION_URL);
       if (!response.ok) {
         throw new Error("Failed to fetch geo data");
       }

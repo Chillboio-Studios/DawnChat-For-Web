@@ -2,6 +2,7 @@ import { Dayjs } from "dayjs";
 import { Root, RootContent } from "mdast";
 import { Mark, Node } from "prosemirror-model";
 import { Client } from "stoat.js";
+import { customEmojiUrl } from "@revolt/common/lib/links";
 
 import { UNIFIED_PLUGINS, unifiedPipeline } from "..";
 import { UnicodeEmojiPacks, unicodeEmojiUrl } from "../emoji/UnicodeEmoji";
@@ -147,7 +148,7 @@ function map(
     case "customEmoji":
       return schema.nodes.rfm_custom_emoji.createAndFill({
         id: node.id,
-        src: `https://cdn.revoltusercontent.com/emojis/${node.id}`,
+        src: customEmojiUrl(node.id),
       })!;
     case "unicodeEmoji":
       return schema.nodes.rfm_unicode_emoji.createAndFill({

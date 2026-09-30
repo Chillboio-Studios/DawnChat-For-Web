@@ -3,6 +3,7 @@ import { Show } from "solid-js";
 import { styled } from "styled-system/jsx";
 
 import { useApi, useClientLifecycle } from "@revolt/client";
+import { DAWNCHAT_SIGNUP_PRIVACY_URL } from "@revolt/common/lib/links";
 import { useInstance } from "@revolt/instance";
 import { useModals } from "@revolt/modal";
 import { A, useNavigate, useParams } from "@revolt/routing";
@@ -47,7 +48,7 @@ function EmailPrivacyHint() {
           </Trans>
         </p>
         <a
-          href="https://stoat.chat/privacy"
+          href={DAWNCHAT_SIGNUP_PRIVACY_URL}
           target="_blank"
           rel="noopener noreferrer"
           tabIndex={-1} // redundant for kb nav -> another link in footer
@@ -107,7 +108,7 @@ export default function FlowCreate() {
       <FlowTitle
         subtitle={<Trans>Set up your account and make yourself at home.</Trans>}
       >
-        <Trans>Join Stoat</Trans>
+        <Trans>Join DawnChat</Trans>
       </FlowTitle>
       <Form onSubmit={create} captcha={config.features.captcha.key}>
         <Fields

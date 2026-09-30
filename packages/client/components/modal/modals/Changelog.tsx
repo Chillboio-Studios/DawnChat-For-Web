@@ -1,6 +1,7 @@
 import { Trans } from "@lingui/solid/macro";
 import { styled } from "styled-system/jsx";
 
+import { DAWNCHAT_CHANGELOG_URL } from "@revolt/common/lib/links";
 import { useTime } from "@revolt/i18n";
 import { renderChangelogMarkdown } from "@revolt/markdown";
 import { Column, Dialog, DialogProps } from "@revolt/ui";
@@ -20,11 +21,9 @@ export interface ChangelogResponse {
   updated_at?: string;
 }
 
-const CHANGELOG_ENDPOINT = "https://changelog.stoat.chat/v1/changelogs/latest";
-
 export async function fetchLatestChangelog(): Promise<ChangelogResponse | null> {
   try {
-    const response = await fetch(CHANGELOG_ENDPOINT, {
+    const response = await fetch(DAWNCHAT_CHANGELOG_URL, {
       headers: { Accept: "application/json" },
     });
 

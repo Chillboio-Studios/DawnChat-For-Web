@@ -1,5 +1,6 @@
-export const STOAT_HOST = "stoat.chat";
-const STOAT_API = "https://api.stoat.chat";
+import { DAWNCHAT_API_HOST, DAWNCHAT_API_URL, DAWNCHAT_HOST } from "./links";
+
+export const STOAT_HOST = DAWNCHAT_HOST;
 
 /** App `stoat.json` endpoint format */
 export interface AppConfig {
@@ -19,23 +20,14 @@ const getEnv = (name: string, devOnly?: boolean) =>
 export const normalizeHost = (host: string) =>
   [
     // historically...
-    "api.revolt.chat",
-    "beta.revolt.chat",
-    "revolt.chat",
-    // ... and now:
-    "api.stoat.chat",
-    "beta.stoat.chat",
+    DAWNCHAT_API_HOST,
   ].includes(host)
     ? STOAT_HOST
     : host;
 
 const isStoatOfficialAPI = (api: string) =>
   [
-    "https://api.revolt.chat",
-    "https://api.stoat.chat",
-    "https://stoat.chat/api",
-    "https://beta.stoat.chat/api",
-    "canary-api.stoat.chat",
+    DAWNCHAT_API_URL,
   ].includes(api);
 
 const DEFAULT_HOST = normalizeHost(
@@ -43,7 +35,7 @@ const DEFAULT_HOST = normalizeHost(
 );
 
 const DEFAULT_API_URL =
-  getEnv("VITE_DEV_API_URL", true) || getEnv("VITE_API_URL") || STOAT_API;
+  getEnv("VITE_DEV_API_URL", true) || getEnv("VITE_API_URL") || DAWNCHAT_API_URL;
 
 if (!isStoatOfficialAPI(DEFAULT_API_URL) && DEFAULT_HOST === STOAT_HOST)
   console.error("VITE_HOST required when VITE_API_URL is set!");

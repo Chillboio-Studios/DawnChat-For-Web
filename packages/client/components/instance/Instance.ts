@@ -3,6 +3,7 @@ import { Accessor, createMemo, createSignal } from "solid-js";
 
 import { CONFIGURATION } from "@revolt/common";
 import { AppConfig, STOAT_HOST } from "@revolt/common/lib/env";
+import { DAWNCHAT_GIFBOX_URL } from "@revolt/common/lib/links";
 import { Client, UserLimits } from "stoat.js";
 
 import { DefaultHost } from ".";
@@ -44,7 +45,7 @@ export default class Instance {
     this.mediaUrl = apiCfg.features.autumn.url;
     this.proxyUrl = apiCfg.features.january.url;
     //TODO Gifbox URL from backend
-    this.gifboxUrl = CONFIGURATION.DEV_GIFBOX_URL || "https://gifbox.dawn-chat.com";
+    this.gifboxUrl = CONFIGURATION.DEV_GIFBOX_URL || DAWNCHAT_GIFBOX_URL;
 
     //Features
     this.config = apiCfg;

@@ -1,4 +1,5 @@
 import { Trans } from "@lingui/solid/macro";
+import { DAWNCHAT_HOST } from "@revolt/common/lib/links";
 import { PLAY_STORE_URL } from "@revolt/common/lib/links";
 import { useState } from "@revolt/state";
 import { Button, Text } from "@revolt/ui";
@@ -21,11 +22,7 @@ const isAndroid = () => /android/i.test(navigator.userAgent);
  */
 const isEligibleOrigin = () => {
   const { hostname } = window.location;
-  return (
-    hostname === "localhost" ||
-    hostname.endsWith(".stoat.chat") ||
-    hostname === "stoat.chat"
-  );
+  return hostname === DAWNCHAT_HOST || hostname.endsWith(`.${DAWNCHAT_HOST}`);
 };
 
 /**
@@ -49,11 +46,11 @@ export function AndroidNag() {
     <Show when={show()}>
       <Base>
         <Hero>
-          <img src={AndroidPromo} alt="Stoat on Android" />
+          <img src={AndroidPromo} alt="DawnChat on Android" />
 
           <Heading>
             <Text class="headline" size="large">
-              <Trans>Stoat works best as an app</Trans>
+              <Trans>DawnChat works best as an app</Trans>
             </Text>
           </Heading>
 
@@ -66,7 +63,7 @@ export function AndroidNag() {
 
             <Text class="body" size="large">
               <Trans>
-                In the meantime, install Stoat from Google Play for a faster,
+                In the meantime, install DawnChat from Google Play for a faster,
                 smoother experience designed for Android.
               </Trans>
             </Text>

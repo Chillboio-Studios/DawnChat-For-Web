@@ -825,7 +825,7 @@ msgstr ""
 #~ msgstr "Periksa email kamu!"
 
 #: components/auth/src/flows/FlowConfirmReset.tsx
-msgid "Choose a new password for your Stoat account."
+msgid "Choose a new password for your DawnChat account."
 msgstr ""
 
 #: components/auth/src/flows/FlowLogin.tsx
@@ -1049,8 +1049,8 @@ msgid "Could not find what you requested."
 msgstr "Tidak dapat menemukan apa yang kamu minta."
 
 #: components/instance/index.tsx
-msgid "Couldn't fetch Stoat configuration from {hStr}."
-msgstr "Tidak dapat mengambil konfigurasi Stoat dari {hStr}."
+msgid "Couldn't fetch DawnChat configuration from {hStr}."
+msgstr "Tidak dapat mengambil konfigurasi DawnChat dari {hStr}."
 
 #: components/ui/components/design/ImageCropper.tsx
 msgid "Couldn't load this image."
@@ -1399,8 +1399,8 @@ msgid "Discover"
 msgstr ""
 
 #: src/interface/Home.tsx
-msgid "Discover Stoat"
-msgstr "Jelajahi Stoat"
+msgid "Discover DawnChat"
+msgstr "Jelajahi DawnChat"
 
 #: components/app/interface/settings/user/appearance/AppearanceMenu.tsx
 msgid "Display & Text"
@@ -1446,12 +1446,12 @@ msgid "Donate"
 msgstr "Donasi"
 
 #: src/interface/Home.tsx
-msgid "Donate to Stoat"
-msgstr "Donasi untuk Stoat"
+msgid "Donate to DawnChat"
+msgstr "Donasi untuk DawnChat"
 
 #: components/ui/components/features/profiles/ProfileBadges.tsx
-msgid "Donated to Stoat"
-msgstr "Didonasikan kepada Stoat"
+msgid "Donated to DawnChat"
+msgstr "Didonasikan kepada DawnChat"
 
 #: components/modal/modals/MFARecovery.tsx
 msgid "Done"
@@ -1650,8 +1650,8 @@ msgid "Extreme violence, gore or animal cruelty"
 msgstr "Kekerasan ekstrem, adegan berdarah atau kekejaman terhadap hewan"
 
 #: components/client/NotificationsController.ts
-msgid "Failed to enable notifications. Stoat does not have notification permission."
-msgstr "Gagal menghidupkan notifikasi. Stoat tidak memiliki izin notifikasi."
+msgid "Failed to enable notifications. DawnChat does not have notification permission."
+msgstr "Gagal menghidupkan notifikasi. DawnChat tidak memiliki izin notifikasi."
 
 #: components/client/NotificationsController.ts
 msgid "Failed to enable push notifications. Please try again later."
@@ -1770,7 +1770,7 @@ msgid "Get it on Google Play"
 msgstr "Dapatkan di Google Play"
 
 #: components/auth/src/AppUpsell.tsx
-msgid "Get Stoat for Android and keep up with your friends wherever you are."
+msgid "Get DawnChat for Android and keep up with your friends wherever you are."
 msgstr ""
 
 #: components/auth/src/AppUpsell.tsx
@@ -1778,16 +1778,16 @@ msgid "Get the desktop app for Windows, macOS and Linux and keep your conversati
 msgstr ""
 
 #: components/ui/components/features/messaging/composition/picker/GifPicker.tsx
-msgid "Gifbox is our own GIF service, so you can keep sharing GIFs right here on Stoat."
-msgstr "Gifbox adalah layanan GIF milik kami sendiri, jadi kamu bisa terus berbagi GIF di sini di Stoat."
+msgid "Gifbox is our own GIF service, so you can keep sharing GIFs right here on DawnChat."
+msgstr "Gifbox adalah layanan GIF milik kami sendiri, jadi kamu bisa terus berbagi GIF di sini di DawnChat."
 
 #: components/ui/components/features/messaging/composition/picker/GifPicker.tsx
 msgid "GIFs are now powered by Gifbox"
 msgstr "GIF sekarang didukung oleh Gifbox"
 
 #: src/interface/Home.tsx
-msgid "Give feedback on Stoat"
-msgstr "Berikan masukan di Stoat"
+msgid "Give feedback on DawnChat"
+msgstr "Berikan masukan di DawnChat"
 
 #: components/modal/modals/ReportContent.tsx
 msgid "Give us some detail"
@@ -1811,8 +1811,8 @@ msgstr "Buka pengaturan akun untuk mengedit nama pengguna kamu"
 
 #: components/app/interface/settings/user/Feedback.tsx
 #: src/interface/Home.tsx
-msgid "Go to the Stoat Lounge"
-msgstr "Pergi ke Ruang Santai Stoat"
+msgid "Go to the DawnChat Lounge"
+msgstr "Pergi ke Ruang Santai DawnChat"
 
 #~ msgid "Go to the testers server"
 #~ msgstr "Pergi ke server penguji"
@@ -1868,8 +1868,8 @@ msgid "Help contribute to an existing or new language"
 msgstr "Bantu berkontribusi pada bahasa yang sudah ada atau bahasa baru"
 
 #: components/ui/components/features/profiles/ProfileBadges.tsx
-msgid "Helped translate Stoat"
-msgstr "Membantu menerjemahkan Stoat"
+msgid "Helped translate DawnChat"
+msgstr "Membantu menerjemahkan DawnChat"
 
 #. placeholder {0}: link()
 #: components/modal/modals/CreateInvite.tsx
@@ -1925,16 +1925,16 @@ msgid "Impersonation"
 msgstr "Peniruan"
 
 #: src/AndroidNag.tsx
-msgid "In the meantime, install Stoat from Google Play for a faster, smoother experience designed for Android."
-msgstr "Sementara itu, instal Stoat dari Google Play untuk pengalaman yang lebih cepat dan lancar, dirancang untuk Android."
+msgid "In the meantime, install DawnChat from Google Play for a faster, smoother experience designed for Android."
+msgstr "Sementara itu, instal DawnChat dari Google Play untuk pengalaman yang lebih cepat dan lancar, dirancang untuk Android."
 
 #: components/app/interface/settings/user/voice/VoiceInputOptions.tsx
 msgid "Input Volume"
 msgstr "Volume Masukan"
 
 #: components/app/interface/settings/user/Native.tsx
-msgid "Instead of closing, Stoat will hide in your tray."
-msgstr "Alih-alih menutup, Stoat akan bersembunyi di baki kamu."
+msgid "Instead of closing, DawnChat will hide in your tray."
+msgstr "Alih-alih menutup, DawnChat akan bersembunyi di baki kamu."
 
 #: components/app/interface/settings/user/appearance/AppearanceMenu.tsx
 msgid "Interface Font"
@@ -1998,13 +1998,13 @@ msgstr "Bergabung ke server"
 #~ msgstr ""
 
 #: components/auth/src/flows/FlowCreate.tsx
-msgid "Join Stoat"
+msgid "Join DawnChat"
 msgstr ""
 
 #: components/app/interface/settings/user/Feedback.tsx
 #: src/interface/Home.tsx
-msgid "Join the Stoat Lounge"
-msgstr "Bergabunglah dengan Ruang Santai Stoat"
+msgid "Join the DawnChat Lounge"
+msgstr "Bergabunglah dengan Ruang Santai DawnChat"
 
 #: components/ui/components/features/voice/callCard/VoiceCallCardPreview.tsx
 #: src/interface/channels/ChannelHeader.tsx
@@ -2062,16 +2062,16 @@ msgid "Latest"
 msgstr "Terbaru"
 
 #: components/app/interface/settings/user/Native.tsx
-msgid "Launch Stoat when you log into your computer."
-msgstr "Luncurkan Stoat saat kamu masuk ke komputer kamu."
+msgid "Launch DawnChat when you log into your computer."
+msgstr "Luncurkan DawnChat saat kamu masuk ke komputer kamu."
 
 #: components/ui/components/features/messaging/composition/picker/GifPicker.tsx
 msgid "Learn more"
 msgstr "Pelajari lebih lanjut"
 
 #: components/app/interface/settings/user/bots/MyBots.tsx
-msgid "Learn more about how to create bots on Stoat."
-msgstr "Pelajari lebih lanjut tentang cara membuat bot di Stoat."
+msgid "Learn more about how to create bots on DawnChat."
+msgstr "Pelajari lebih lanjut tentang cara membuat bot di DawnChat."
 
 #: components/modal/modals/DeleteChannel.tsx
 #: components/modal/modals/LeaveServer.tsx
@@ -2094,8 +2094,8 @@ msgid "Leave server"
 msgstr "Tinggalkan server"
 
 #: components/app/interface/settings/user/Native.tsx
-msgid "Let Stoat use its own custom titlebar."
-msgstr "Biarkan Stoat menggunakan bilah judul kustomnya sendiri."
+msgid "Let DawnChat use its own custom titlebar."
+msgstr "Biarkan DawnChat menggunakan bilah judul kustomnya sendiri."
 
 #: src/interface/Home.tsx
 msgid "Let us know how we can improve our app by giving us feedback."
@@ -2429,11 +2429,11 @@ msgid "New Password"
 msgstr "Kata Sandi Baru"
 
 #: components/app/interface/channels/text/Message.tsx
-msgid "New to Stoat"
-msgstr "Pendatang Baru di Stoat"
+msgid "New to DawnChat"
+msgstr "Pendatang Baru di DawnChat"
 
 #: components/auth/src/AuthPage.tsx
-msgid "New to Stoat?"
+msgid "New to DawnChat?"
 msgstr ""
 
 #: components/app/interface/channels/text/Message.tsx
@@ -2885,8 +2885,8 @@ msgid "Rename Session"
 msgstr "Ubah Nama Sesi"
 
 #: components/app/interface/settings/user/Native.tsx
-msgid "Rep Stoat using Discord rich presence."
-msgstr "Rep Stoat menggunakan Discord rich presence."
+msgid "Rep DawnChat using Discord rich presence."
+msgstr "Rep DawnChat menggunakan Discord rich presence."
 
 #: components/app/menus/MessageContextMenu.tsx
 msgid "Reply"
@@ -3251,8 +3251,8 @@ msgid "Show send message button"
 msgstr "Tampilkan tombol kirim pesan"
 
 #: components/auth/src/flows/FlowLogin.tsx
-#~ msgid "Sign into Stoat"
-#~ msgstr "Masuk ke dalam Stoat"
+#~ msgid "Sign into DawnChat"
+#~ msgstr "Masuk ke dalam DawnChat"
 
 #: components/auth/src/flows/FlowHome.tsx
 #~ msgid "Sign Up"
@@ -3346,39 +3346,39 @@ msgstr "Mulai dengan Komputer"
 msgid "Status"
 msgstr "Status"
 
-#~ msgid "Stoat Desktop"
+#~ msgid "DawnChat Desktop"
 #~ msgstr ""
 
 #: components/ui/components/features/profiles/ProfileBadges.tsx
-msgid "Stoat Developer"
-msgstr "Pengembang Stoat"
+msgid "DawnChat Developer"
+msgstr "Pengembang DawnChat"
 
 #: components/app/interface/settings/user/Native.tsx
-msgid "Stoat for Desktop"
-msgstr "Stoat untuk Desktop"
+msgid "DawnChat for Desktop"
+msgstr "DawnChat untuk Desktop"
 
 #: components/ui/components/features/profiles/ProfileBadges.tsx
-msgid "Stoat Founder"
-msgstr "Pendiri Stoat"
+msgid "DawnChat Founder"
+msgstr "Pendiri DawnChat"
 
 #: components/auth/src/flows/FlowHome.tsx
-#~ msgid "Stoat is one of the best ways to stay connected with your friends and community, anywhere, anytime."
-#~ msgstr "Stoat adalah salah satu cara terbaik untuk tetap terhubung dengan teman dan komunitas kamu, dimana saja, kapan saja."
+#~ msgid "DawnChat is one of the best ways to stay connected with your friends and community, anywhere, anytime."
+#~ msgstr "DawnChat adalah salah satu cara terbaik untuk tetap terhubung dengan teman dan komunitas kamu, dimana saja, kapan saja."
 
 #: components/app/interface/settings/server/roles/ServerRoleEditor.tsx
-msgid "Stoat rocks!"
-msgstr "Stoat keren!"
+msgid "DawnChat rocks!"
+msgstr "DawnChat keren!"
 
 #: components/app/interface/settings/user/Native.tsx
-msgid "Stoat will start in the system tray."
-msgstr "Stoat akan dimulai di baki sistem."
+msgid "DawnChat will start in the system tray."
+msgstr "DawnChat akan dimulai di baki sistem."
 
 #: src/AndroidNag.tsx
-msgid "Stoat works best as an app"
-msgstr "Stoat bekerja lebih baik sebagai aplikasi"
+msgid "DawnChat works best as an app"
+msgstr "DawnChat bekerja lebih baik sebagai aplikasi"
 
 #: components/auth/src/AppUpsell.tsx
-msgid "Stoat, right on <0>your desktop.</0>"
+msgid "DawnChat, right on <0>your desktop.</0>"
 msgstr ""
 
 #: components/ui/components/features/voice/callCard/VoiceCallCardActions.tsx
@@ -3414,8 +3414,8 @@ msgid "Subscriptions"
 msgstr "Langganan"
 
 #: components/app/interface/settings/user/Feedback.tsx
-msgid "Suggest new Stoat features on GitHub discussions."
-msgstr "Sarankan fitur Stoat baru di diskusi GitHub."
+msgid "Suggest new DawnChat features on GitHub discussions."
+msgstr "Sarankan fitur DawnChat baru di diskusi GitHub."
 
 #: src/interface/Home.tsx
 msgid "Support the project by donating - thank you!"
@@ -3682,8 +3682,8 @@ msgstr "Buka blokir pengguna"
 
 #. placeholder {0}: err.type
 #: components/i18n/errors.tsx
-msgid "Uncaught Stoat error: {0}"
-msgstr "Kesalahan Stoat yang tidak tertangani: {0}"
+msgid "Uncaught DawnChat error: {0}"
+msgstr "Kesalahan DawnChat yang tidak tertangani: {0}"
 
 #: components/app/interface/settings/user/notifications/Sounds.tsx
 #: components/ui/components/features/voice/callCard/VoiceCallCardActions.tsx
@@ -3921,7 +3921,7 @@ msgid "We are working hard on optimising our web app for mobile."
 msgstr "Kami sedang bekerja keras untuk mengoptimalkan aplikasi web kami untuk perangkat seluler."
 
 #: components/auth/src/flows/FlowLogin.tsx
-msgid "We couldn't finish logging you in. Try again, and if it keeps happening, check Stoat's status."
+msgid "We couldn't finish logging you in. Try again, and if it keeps happening, check DawnChat's status."
 msgstr ""
 
 #: components/auth/src/flows/FlowCreate.tsx
@@ -4157,8 +4157,8 @@ msgid "You've been logged out"
 msgstr ""
 
 #: components/modal/modals/SignedOut.tsx
-msgid "You've been signed out of Stoat!"
-msgstr "Kamu telah keluar dari Stoat!"
+msgid "You've been signed out of DawnChat!"
+msgstr "Kamu telah keluar dari DawnChat!"
 
 #: components/i18n/errors.tsx
 msgid "You've reached your personal bot limit."

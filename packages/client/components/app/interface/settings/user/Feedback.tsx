@@ -11,6 +11,12 @@ import MdFormatListNumbered from "@material-design-icons/svg/outlined/format_lis
 import MdStar from "@material-design-icons/svg/outlined/star_outline.svg?component-solid";
 
 import { useClient } from "@revolt/client";
+import {
+  BUG_TRACKER_URL,
+  DAWNCHAT_LOUNGE_SERVER_ID,
+  FEEDBACK_URL,
+  ROADMAP_URL
+} from "@revolt/common/lib/links";
 import { useInstance } from "@revolt/instance";
 import { useModals } from "@revolt/modal";
 import { CategoryButton, Column, iconSize } from "@revolt/ui";
@@ -24,9 +30,9 @@ export function Feedback() {
   const client = useClient();
   const instance = useInstance();
 
-  const showLoungeButton = instance.isStoat;
+  const showLoungeButton = true; // Always Show Lounge Button:3
   const isInLounge =
-    client()!.servers.get("01F7ZSBSFHQ8TA81725KQCSDDP") !== undefined;
+    client()!.servers.get(DAWNCHAT_LOUNGE_SERVER_ID) !== undefined;
 
   return (
     <Column gap="lg">
@@ -45,7 +51,7 @@ export function Feedback() {
           </CategoryButton>
         </Link> */}
         <Link
-          href="https://github.com/orgs/stoatchat/discussions/categories/feature-suggestions"
+          href={ROADMAP_URL}
           target="_blank"
         >
           <CategoryButton
@@ -53,14 +59,14 @@ export function Feedback() {
             icon={<MdStar {...iconSize(22)} />}
             ignoreClick
             description={
-              <Trans>Suggest new Stoat features on GitHub discussions.</Trans>
+              <Trans>Suggest new DawnChat features on GitHub discussions.</Trans>
             }
           >
             <Trans>Submit feature suggestion</Trans>
           </CategoryButton>
         </Link>
         <Link
-          href="https://github.com/orgs/stoatchat/discussions/categories/feedback"
+          href={FEEDBACK_URL}
           target="_blank"
         >
           <CategoryButton
@@ -73,7 +79,7 @@ export function Feedback() {
           </CategoryButton>
         </Link>
         <Link
-          href="https://github.com/stoatchat/for-web/issues?q=is%3Aissue%20state%3Aopen%20type%3ABug"
+          href={BUG_TRACKER_URL}
           target="_blank"
         >
           <CategoryButton
@@ -89,7 +95,7 @@ export function Feedback() {
           <Match when={showLoungeButton && isInLounge}>
             <CategoryButton
               onClick={() => {
-                navigate("/server/01F7ZSBSFHQ8TA81725KQCSDDP");
+                navigate(`/server/${DAWNCHAT_LOUNGE_SERVER_ID}`);
                 pop();
               }}
               description={
@@ -100,7 +106,7 @@ export function Feedback() {
               }
               icon={<MdGroups3 />}
             >
-              <Trans>Go to the Stoat Lounge</Trans>
+              <Trans>Go to the DawnChat Lounge</Trans>
             </CategoryButton>
           </Match>
           <Match when={showLoungeButton && !isInLounge}>
@@ -119,7 +125,7 @@ export function Feedback() {
               }
               icon={<MdGroups3 />}
             >
-              <Trans>Join the Stoat Lounge</Trans>
+              <Trans>Join the DawnChat Lounge</Trans>
             </CategoryButton>
           </Match>
         </Switch>

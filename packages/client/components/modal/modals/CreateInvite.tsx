@@ -6,6 +6,7 @@ import { styled } from "styled-system/jsx";
 
 import { useInstance } from "@revolt/instance";
 import Instance from "@revolt/instance/Instance";
+import { DAWNCHAT_INVITE_SHORTENER_URL } from "@revolt/common/lib/links";
 import { Dialog, DialogProps } from "@revolt/ui";
 
 import { useModals } from "..";
@@ -31,7 +32,9 @@ const Invite = styled("div", {
 
 /** Get absolute link from invite id */
 export const getInviteLink = (id: string, inst: Instance) =>
-  inst.isStoat ? `https://stt.gg/${id}` : inst.href(`/invite/${id}`);
+  inst.isStoat
+    ? `${DAWNCHAT_INVITE_SHORTENER_URL}/${id}`
+    : inst.href(`/invite/${id}`);
 
 /**
  * Modal to create a new invite

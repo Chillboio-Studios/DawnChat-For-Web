@@ -41,6 +41,7 @@ import { styled } from "styled-system/jsx";
 import { useClient } from "@revolt/client";
 import { CustomEmoji, UnicodeEmoji } from "@revolt/markdown/emoji";
 import { unicodeEmojiUrl } from "@revolt/markdown/emoji/UnicodeEmoji";
+import { customEmojiUrl } from "@revolt/common/lib/links";
 import {
   blankModel,
   markdownFromProseMirrorModel,
@@ -471,7 +472,7 @@ export function TextEditor(props: Props) {
                       action.range.from,
                       schema.nodes.rfm_custom_emoji.createAndFill({
                         id: match.id,
-                        src: `https://cdn.revoltusercontent.com/emojis/${match.id}`,
+                        src: customEmojiUrl(match.id),
                       })!,
                     );
                   }

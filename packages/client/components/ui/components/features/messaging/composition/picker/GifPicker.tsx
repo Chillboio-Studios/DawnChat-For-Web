@@ -17,6 +17,12 @@ import { styled } from "styled-system/jsx";
 
 import { useClient } from "@revolt/client";
 import { CONFIGURATION, debounce, useDevice } from "@revolt/common";
+import {
+  DAWNCHAT_GIFBOX_INFO_URL,
+  KLIPY_API_BASE_URL,
+  KLIPY_URL,
+  GIFBOX_UPLOAD_URL,
+} from "@revolt/common/lib/links";
 import { useInstance } from "@revolt/instance";
 import { useState } from "@revolt/state";
 import {
@@ -39,13 +45,9 @@ const GIFBOX_EXPLAINER_DISMISS_KEY = "gifbox-explainer-dismissed";
 /**
  * Link to more information about Gifbox
  */
-const GIFBOX_LEARN_MORE_URL = "https://stoat.gg/meet-gifbox";
-
 /**
  * Link to upload GIFs to Gifbox
  */
-const GIFBOX_UPLOAD_URL = "https://gifbox.me/upload";
-
 type GifCategory = { title: string; image: string };
 
 type GifResult = {
@@ -222,12 +224,11 @@ function GifboxExplainer() {
         }}
       >
         <Text class="title" size="small">
-          <Trans>GIFs are now powered by Gifbox</Trans>
+          <Trans>GIFs are now powered by Gifbox and Klipy</Trans>
         </Text>
         <ExplainerBody>
           <Trans>
-            Gifbox is our own GIF service, so you can keep sharing GIFs right
-            here on Stoat.
+            Gifbox is provided by StoatChat (Revolt Platforms Ltd). Klipy is provided by Kikliko Inc. Both services are free to use and allow you to upload your own GIFs for everyone to use.
           </Trans>
         </ExplainerBody>
         <ExplainerActions>
@@ -235,7 +236,7 @@ function GifboxExplainer() {
             variant="text"
             onPress={() =>
               window.open(
-                GIFBOX_LEARN_MORE_URL,
+                DAWNCHAT_GIFBOX_INFO_URL,
                 "_blank",
                 "noopener,noreferrer",
               )
@@ -483,7 +484,7 @@ function KlipyCategories(props: { onSelect: (query: string) => void }) {
       enabled: Boolean(CONFIGURATION.KLIPY_API_KEY),
       queryFn: async ({ signal }) => {
         const response = await fetch(
-          `https://api.klipy.com/api/v1/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/categories?locale=en_US`,
+          `${KLIPY_API_BASE_URL}/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/categories?locale=en_US`,
           { signal },
         );
         if (!response.ok)
@@ -543,7 +544,7 @@ function KlipyUnavailable() {
 function KlipyAttribution() {
   return (
     <KlipyCredit>
-      <a href="https://klipy.com" target="_blank" rel="noopener noreferrer">
+      <a href={KLIPY_URL} target="_blank" rel="noopener noreferrer">
         Powered by KLIPY
       </a>
     </KlipyCredit>
@@ -748,7 +749,7 @@ function KlipySearch(props: { query: string }) {
 
       const endpoint = isTrending() ? "trending" : "search";
       const response = await fetch(
-        `https://api.klipy.com/api/v1/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/${endpoint}?${params}`,
+        `${KLIPY_API_BASE_URL}/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/${endpoint}?${params}`,
         { signal },
       );
       if (!response.ok)
@@ -803,7 +804,7 @@ function KlipySearch(props: { query: string }) {
                       onClick={() => {
                         if (gif.slug) {
                           void fetch(
-                            `https://api.klipy.com/api/v1/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/share/${encodeURIComponent(gif.slug)}`,
+                            `${KLIPY_API_BASE_URL}/${encodeURIComponent(CONFIGURATION.KLIPY_API_KEY!)}/gifs/share/${encodeURIComponent(gif.slug)}`,
                             {
                               method: "POST",
                               headers: { "Content-Type": "application/json" },
@@ -815,7 +816,7 @@ function KlipySearch(props: { query: string }) {
                         }
                         onMessage(
                           gif.slug
-                            ? `https://klipy.com/gifs/${encodeURIComponent(gif.slug)}`
+                            ? `${KLIPY_URL}/gifs/${encodeURIComponent(gif.slug)}`
                             : mediaUrl!,
                         );
                       }}

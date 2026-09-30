@@ -3,6 +3,7 @@ import { Match, Show, Switch } from "solid-js";
 import { Trans } from "@lingui/solid/macro";
 import { Channel } from "stoat.js";
 
+import { adminPanelInspectUrl } from "@revolt/common/lib/links";
 import { useInstance } from "@revolt/instance";
 import { useModals } from "@revolt/modal";
 import { useState } from "@revolt/state";
@@ -103,7 +104,7 @@ export function ChannelContextMenu(props: { channel: Channel }) {
    */
   function openAdminPanel() {
     window.open(
-      `https://admin.dawn-chat.com/panel/inspect/channel/${props.channel.id}`,
+      adminPanelInspectUrl("channel", props.channel.id),
       "_blank",
     );
   }

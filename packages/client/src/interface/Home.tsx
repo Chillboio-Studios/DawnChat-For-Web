@@ -6,6 +6,11 @@ import { css, cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
 import { IS_DEV, useClient } from "@revolt/client";
+import {
+  DAWNCHAT_DONATION_URL,
+  DAWNCHAT_LOUNGE_HOME_SERVER_ID,
+  DAWNCHAT_LOUNGE_SERVER_ID,
+} from "@revolt/common/lib/links";
 import { useInstance } from "@revolt/instance";
 import { useModals } from "@revolt/modal";
 import { useNavigate } from "@revolt/routing";
@@ -16,6 +21,7 @@ import {
   Header,
   iconSize,
   main,
+  Text,
 } from "@revolt/ui";
 
 import MdAddCircle from "@material-design-icons/svg/filled/add_circle.svg?component-solid";
@@ -63,15 +69,22 @@ const content = cva({
  */
 const Buttons = styled("div", {
   base: {
-    gap: "8px",
-    padding: "8px",
-    display: "flex",
-    flexWrap: "wrap",
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 260px))",
+    gap: "12px",
+    padding: "12px",
+    maxWidth: "100%",
     justifyContent: "center",
-    borderRadius: "var(--borderRadius-lg)",
+    borderRadius: "var(--borderRadius-md)",
 
     color: "var(--md-sys-color-on-surface-variant)",
-    background: "var(--md-sys-color-surface-variant)",
+    background: "var(--md-sys-color-surface-container-low)",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+
+    "@media (max-width: 640px)": {
+      gridTemplateColumns: "minmax(0, 1fr)",
+      width: "min(100%, 360px)",
+    },
   },
 });
 
@@ -81,11 +94,37 @@ const Buttons = styled("div", {
 const SeparatedColumn = styled(Column, {
   base: {
     justifyContent: "stretch",
-    marginInline: "0.25em",
-    width: "260px",
+    minWidth: 0,
     "& > *": {
       flexGrow: 1,
     },
+  },
+});
+
+const LogoBackdrop = styled("div", {
+  base: {
+    padding: "16px 24px",
+    borderRadius: "var(--borderRadius-xl)",
+    border: "1px solid var(--md-sys-color-outline-variant)",
+    background:
+      "color-mix(in srgb, var(--md-sys-color-surface) 88%, white 12%)",
+    boxShadow: "var(--shadow-2)",
+  },
+});
+
+const NotFoundNotice = styled("section", {
+  base: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "12px",
+    width: "min(100%, 560px)",
+    padding: "24px",
+    borderRadius: "var(--borderRadius-md)",
+    border: "1px solid var(--md-sys-color-error)",
+    background: "var(--md-sys-color-error-container)",
+    color: "var(--md-sys-color-on-error-container)",
+    textAlign: "center",
   },
 });
 
@@ -101,7 +140,7 @@ export function HomePage() {
   // check if we're stoat.chat; if so, check if the user is in the Lounge
   const showLoungeButton = instance.isStoat;
   const isInLounge =
-    client()!.servers.get("01F7ZSBSFHQ8TA81725KQCSDDP") !== undefined;
+    client()!.servers.get(DAWNCHAT_LOUNGE_SERVER_ID) !== undefined;
 
   return (
     <Base>
@@ -113,12 +152,15 @@ export function HomePage() {
       </Header>
       <div use:scrollable={{ class: content() }}>
         <Column>
-          <Wordmark
-            class={css({
-              width: "178px",
-              fill: "var(--md-sys-color-on-surface)",
-            })}
-          />
+          <LogoBackdrop>
+            <Wordmark
+              class={css({
+                width: "min(480px, 78vw)",
+                height: "auto",
+                fill: "var(--md-sys-color-on-surface)",
+              })}
+            />
+          </LogoBackdrop>
         </Column>
         <Buttons>
           <SeparatedColumn>
@@ -142,7 +184,9 @@ export function HomePage() {
             <Switch fallback={null}>
               <Match when={showLoungeButton && isInLounge}>
                 <CategoryButton
-                  onClick={() => navigate("/server/01F7ZSBSFHQ8TA81725KQCSDDP")}
+                  onClick={() =>
+                    navigate(`/server/${DAWNCHAT_LOUNGE_HOME_SERVER_ID}`)
+                  }
                   description={
                     <Trans>
                       You can report issues and discuss improvements with us
@@ -151,7 +195,7 @@ export function HomePage() {
                   }
                   icon={<MdGroups3 />}
                 >
-                  <Trans>Go to the Stoat Lounge</Trans>
+                  <Trans>Go to the DawnChat Lounge</Trans>
                 </CategoryButton>
               </Match>
               <Match when={showLoungeButton && !isInLounge}>
@@ -172,19 +216,25 @@ export function HomePage() {
                   }
                   icon={<MdGroups3 />}
                 >
-                  <Trans>Join the Stoat Lounge</Trans>
+                  <Trans>Join the DawnChat Lounge</Trans>
                 </CategoryButton>
               </Match>
             </Switch>
             <CategoryButton
               variant="tertiary"
-              onClick={() => window.open("https://ko-fi.com/stoatchat")}
+              onClick={() =>
+                window.open(
+                  DAWNCHAT_DONATION_URL,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
               description={
                 <Trans>Support the project by donating - thank you!</Trans>
               }
               icon={<MdPayments />}
             >
-              <Trans>Donate to Stoat</Trans>
+              <Trans>Donate to DawnChat</Trans>
             </CategoryButton>
           </SeparatedColumn>
           <SeparatedColumn>
@@ -198,7 +248,7 @@ export function HomePage() {
                 }
                 icon={<MdExplore />}
               >
-                <Trans>Discover Stoat</Trans>
+                <Trans>Discover DawnChat</Trans>
               </CategoryButton>
             </Show>
             <CategoryButton
@@ -216,7 +266,7 @@ export function HomePage() {
               }
               icon={<MdRateReview {...iconSize(22)} />}
             >
-              <Trans>Give feedback on Stoat</Trans>
+              <Trans>Give feedback on DawnChat</Trans>
             </CategoryButton>
             <CategoryButton
               onClick={() => openModal({ type: "settings", config: "user" })}
@@ -236,6 +286,46 @@ export function HomePage() {
             Open Development Page
           </Button>
         </Show>
+      </div>
+    </Base>
+  );
+}
+
+/** Full-screen content for unmatched application routes. */
+export function NotFoundPage() {
+  const navigate = useNavigate();
+
+  return (
+    <Base>
+      <Header placement="primary">
+        <HeaderIcon>
+          <MdHome {...iconSize(22)} />
+        </HeaderIcon>
+        <Trans>Page not found</Trans>
+      </Header>
+      <div use:scrollable={{ class: content() }}>
+        <LogoBackdrop>
+          <Wordmark
+            class={css({
+              width: "min(360px, 72vw)",
+              height: "auto",
+              fill: "var(--md-sys-color-on-surface)",
+            })}
+          />
+        </LogoBackdrop>
+        <NotFoundNotice aria-labelledby="not-found-title">
+          <div id="not-found-title">
+            <Text class="headline" size="large">
+              <Trans>404 page could not be found</Trans>
+            </Text>
+          </div>
+          <Text>
+            <Trans>The page you requested does not exist.</Trans>
+          </Text>
+          <Button onPress={() => navigate("/app")}>
+            <Trans>Go to Home</Trans>
+          </Button>
+        </NotFoundNotice>
       </div>
     </Base>
   );

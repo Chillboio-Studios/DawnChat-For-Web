@@ -2,6 +2,10 @@ import { Show } from "solid-js";
 
 import { Trans } from "@lingui/solid/macro";
 
+import {
+  DAWNCHAT_WEBMAIL_URL,
+  EMAIL_PROVIDER_URLS,
+} from "@revolt/common/lib/links";
 import { Button } from "@revolt/ui";
 
 interface Props {
@@ -23,9 +27,9 @@ function mapMailProvider(email?: string): [string, string] | undefined {
   switch (domain) {
     case "gmail.com":
     case "googlemail.com":
-      return ["Gmail", "https://gmail.com"];
+      return ["Gmail", EMAIL_PROVIDER_URLS.gmail];
     case "tuta.io":
-      return ["Tutanota", "https://mail.tutanota.com"];
+      return ["Tutanota", EMAIL_PROVIDER_URLS.tutanota];
     case "outlook.com":
     case "hotmail.com":
     case "outlook.jp":
@@ -59,53 +63,53 @@ function mapMailProvider(email?: string): [string, string] | undefined {
     case "outlook.co.th":
     case "outlook.com.tr":
     case "outlook.com.vn":
-      return ["Outlook", "https://outlook.live.com"];
+      return ["Outlook", EMAIL_PROVIDER_URLS.outlook];
     case "yahoo.com":
-      return ["Yahoo", "https://mail.yahoo.com"];
+      return ["Yahoo", EMAIL_PROVIDER_URLS.yahoo];
     case "wp.pl":
-      return ["WP Poczta", "https://poczta.wp.pl"];
+      return ["WP Poczta", EMAIL_PROVIDER_URLS.wp];
     case "protonmail.com":
     case "protonmail.ch":
     case "pm.me":
-      return ["ProtonMail", "https://mail.protonmail.com"];
+      return ["ProtonMail", EMAIL_PROVIDER_URLS.protonmail];
     case "seznam.cz":
     case "email.cz":
     case "post.cz":
-      return ["Seznam", "https://email.seznam.cz"];
+      return ["Seznam", EMAIL_PROVIDER_URLS.seznam];
     case "zoho.com":
-      return ["Zoho Mail", "https://mail.zoho.com/zm/"];
+      return ["Zoho Mail", EMAIL_PROVIDER_URLS.zoho];
     case "aol.com":
     case "aim.com":
-      return ["AOL Mail", "https://mail.aol.com/"];
+      return ["AOL Mail", EMAIL_PROVIDER_URLS.aol];
     case "icloud.com":
-      return ["iCloud Mail", "https://mail.icloud.com/"];
+      return ["iCloud Mail", EMAIL_PROVIDER_URLS.icloud];
     case "mail.com":
     case "email.com":
-      return ["mail.com", "https://www.mail.com/mail/"];
+      return ["mail.com", EMAIL_PROVIDER_URLS.mail];
     case "yandex.ru":
     case "yandex.by":
     case "yandex.ua":
     case "yandex.com":
-      return ["Yandex Mail", "https://mail.yandex.com/"];
+      return ["Yandex Mail", EMAIL_PROVIDER_URLS.yandex];
     case "hey.com":
-      return ["HEY", "https://app.hey.com/"];
+      return ["HEY", EMAIL_PROVIDER_URLS.hey];
     case "mail.ru":
     case "bk.ru":
     case "inbox.ru":
     case "list.ru":
     case "internet.ru":
-      return ["Mail.ru", "https://mail.ru/"];
+      return ["Mail.ru", EMAIL_PROVIDER_URLS.mailRu];
     case "rambler.ru":
     case "lenta.ru":
     case "autorambler.ru":
     case "myrambler.ru":
     case "ro.ru":
     case "rambler.ua":
-      return ["Rambler", "https://rambler.ru/"];
-    case "revolt.chat":
-    case "revolt.wtf":
-    case "stoat.chat":
-      return ["Stoat Mail", "https://webmail.revolt.wtf"];
+      return ["Rambler", EMAIL_PROVIDER_URLS.rambler];
+    case "creatorplaza.nl":
+    case "dawn-chat.com":
+    case "chillboiostudios.com":
+      return ["DawnChat Mail", DAWNCHAT_WEBMAIL_URL];
     default:
       return [domain, `https://${domain}`];
   }

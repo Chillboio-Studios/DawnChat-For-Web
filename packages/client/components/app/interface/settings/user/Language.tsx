@@ -1,4 +1,5 @@
 import { Trans, useLingui } from "@lingui/solid/macro";
+import { DAWNCHAT_TRANSLATIONS_URL } from "@revolt/common/lib/links";
 
 import { Language, Languages, browserPreferredLanguage } from "@revolt/i18n";
 import type { LanguageEntry } from "@revolt/i18n/Languages";
@@ -202,7 +203,7 @@ function PickTimeFormat() {
  */
 function ContributeLanguageLink() {
   return (
-    <a href="https://translate.stoat.chat/projects/revolt/" target="_blank">
+    <a href={DAWNCHAT_TRANSLATIONS_URL} target="_blank">
       <CategoryButton
         action="external"
         icon={<MdTranslate {...iconSize(22)} />}

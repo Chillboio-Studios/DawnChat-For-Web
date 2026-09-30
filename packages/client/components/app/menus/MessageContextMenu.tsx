@@ -3,6 +3,7 @@ import { Accessor, For, Match, Show, Switch } from "solid-js";
 import { Trans } from "@lingui/solid/macro";
 import { File, Message } from "stoat.js";
 
+import { adminPanelInspectUrl } from "@revolt/common/lib/links";
 import { useClient, useUser } from "@revolt/client";
 import { useInstance } from "@revolt/instance";
 import { CustomEmoji, UnicodeEmoji } from "@revolt/markdown/emoji";
@@ -119,7 +120,7 @@ export function MessageContextMenu(props: {
    */
   function openAdminPanel() {
     window.open(
-      `https://admin.dawn-chat.com/panel/inspect/message/${props.message!.id}`,
+      adminPanelInspectUrl("message", props.message!.id),
       "_blank",
     );
   }

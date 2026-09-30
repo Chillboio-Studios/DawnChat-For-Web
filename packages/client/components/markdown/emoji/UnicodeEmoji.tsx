@@ -3,6 +3,7 @@ import { ComponentProps, splitProps } from "solid-js";
 import emojiRegex from "emoji-regex";
 
 import { useState } from "@revolt/state";
+import { UNICODE_EMOJI_BASE_URL } from "@revolt/common/lib/links";
 import { EmojiBase, toCodepoint } from ".";
 
 // openmoji is off due to incomplete implementation
@@ -74,7 +75,7 @@ export function unicodeEmojiUrl(
   pack: UnicodeEmojiPacks = "fluent-3d",
   text: string,
 ) {
-  return `https://static.stoat.chat/emoji/${pack}/${toCodepoint(text)}.svg?v=1`;
+  return `${UNICODE_EMOJI_BASE_URL}/${pack}/${toCodepoint(text)}.svg?v=1`;
 }
 
 /**

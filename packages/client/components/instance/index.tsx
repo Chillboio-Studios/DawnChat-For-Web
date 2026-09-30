@@ -12,6 +12,7 @@ import { Dynamic } from "solid-js/web";
 
 import { CONFIGURATION } from "@revolt/common";
 import { AppConfig, normalizeHost, STOAT_HOST } from "@revolt/common/lib/env";
+import { DAWNCHAT_CONFIG_PATH } from "@revolt/common/lib/links";
 import { LoadingScreen, useSnackbar } from "@revolt/ui";
 
 import Instance, { _newClient } from "./Instance";
@@ -39,7 +40,7 @@ export function InstanceContext(props: { children?: JSXElement }) {
     console.error(e);
     if ((e as Error).message === "Failed to fetch") {
       const hStr = `'${host || DefaultHost}'`;
-      e = t`Couldn't fetch Stoat configuration from ${hStr}.`;
+      e = t`Couldn't fetch DawnChat configuration from ${hStr}.`;
     }
     snackbar.show({
       message: t`Oops, something went wrong! ${e}`,
@@ -58,7 +59,7 @@ export function InstanceContext(props: { children?: JSXElement }) {
 
     try {
       const appCfg: AppConfig = host
-        ? await (await fetch(`https://${host}/.well-known/stoat`)).json()
+        ? await (await fetch(`https://${host}${DAWNCHAT_CONFIG_PATH}`)).json()
         : { api: CONFIGURATION.DEFAULT_API_URL };
 
       const cli = _newClient(appCfg.api);

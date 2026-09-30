@@ -2,6 +2,7 @@ import { createFormControl, createFormGroup } from "solid-forms";
 
 import { Trans, useLingui } from "@lingui/solid/macro";
 
+import { DAWNCHAT_TERMS_URL } from "@revolt/common/lib/links";
 import { Column, Dialog, DialogProps, Form2, Text } from "@revolt/ui";
 
 import { useModals } from "..";
@@ -58,7 +59,7 @@ export function CreateBotModal(
           <Text>
             <Trans>
               By creating this bot, you agree to the{" "}
-              <a href="https://stoat.chat/aup" target="_blank" rel="noreferrer">
+              <a href={DAWNCHAT_TERMS_URL} target="_blank" rel="noreferrer">
                 <Trans>Acceptable Use Policy</Trans>
               </a>
               .

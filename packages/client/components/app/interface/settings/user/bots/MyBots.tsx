@@ -3,6 +3,7 @@ import { ErrorBoundary, For, Suspense } from "solid-js";
 import { Trans } from "@lingui/solid/macro";
 
 import { useClient } from "@revolt/client";
+import { DAWNCHAT_DEVELOPERS_URL } from "@revolt/common/lib/links";
 import { createOwnBotsResource } from "@revolt/client/resources";
 import { useModals } from "@revolt/modal";
 import {
@@ -63,9 +64,9 @@ function CreateBot() {
       <CategoryButton
         action="external"
         icon={<MdLibraryBooks {...iconSize(22)} />}
-        onClick={() => window.open("https://developers.stoat.chat", "_blank")}
+        onClick={() => window.open(DAWNCHAT_DEVELOPERS_URL, "_blank")}
         description={
-          <Trans>Learn more about how to create bots on Stoat.</Trans>
+          <Trans>Learn more about how to create bots on DawnChat and Stoat, (Remember, we are a Stoat Instance!).</Trans>
         }
       >
         <Trans>Developer Documentation</Trans>

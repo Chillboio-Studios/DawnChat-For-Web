@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { Server } from "stoat.js";
 
 import { useClient } from "@revolt/client";
+import { adminPanelInspectUrl } from "@revolt/common/lib/links";
 import { useDevice } from "@revolt/common";
 import { useModals } from "@revolt/modal";
 import { useState } from "@revolt/state";
@@ -120,7 +121,7 @@ export function ServerContextMenu(props: { server: Server }) {
    */
   function openAdminPanel() {
     window.open(
-      `https://admin.dawn-chat.com/panel/inspect/server/${props.server.id}`,
+      adminPanelInspectUrl("server", props.server.id),
       "_blank",
     );
   }

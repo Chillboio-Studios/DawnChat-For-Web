@@ -22,6 +22,13 @@ import { useClientLifecycle } from "@revolt/client";
 import { State } from "@revolt/client/Controller";
 import { A, useLocation } from "@revolt/routing";
 import { useState } from "@revolt/state";
+import {
+  BLUESKY_URL,
+  GITHUB_URL,
+  DAWNCHAT_PRIVACY_URL,
+  DAWNCHAT_SUPPORT_URL,
+  DAWNCHAT_TERMS_URL,
+} from "@revolt/common/lib/links";
 import { IconButton, iconSize } from "@revolt/ui";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
@@ -540,7 +547,7 @@ export function AuthPage(props: { children: JSX.Element }) {
                   fallback={
                     <>
                       <span>
-                        <Trans>New to Stoat?</Trans>
+                        <Trans>New to DawnChat?</Trans>
                       </span>
                       <A href="/login/create">
                         <Trans>Create account</Trans>
@@ -631,26 +638,26 @@ export function AuthPage(props: { children: JSX.Element }) {
 
           <Footer>
             <nav aria-label="Legal">
-              <a href="https://stoat.chat/terms" target="_blank">
+              <a href={DAWNCHAT_TERMS_URL} target="_blank">
                 <Trans>Terms</Trans>
               </a>
-              <a href="https://stoat.chat/privacy" target="_blank">
+              <a href={DAWNCHAT_PRIVACY_URL} target="_blank">
                 <Trans>Privacy</Trans>
               </a>
-              <a href="https://support.stoat.chat/" target="_blank">
+              <a href={DAWNCHAT_SUPPORT_URL} target="_blank">
                 <Trans>Help</Trans>
               </a>
             </nav>
             <Socials aria-label="Social links">
               <a
-                href="https://github.com/stoatchat"
+                href={GITHUB_URL}
                 target="_blank"
                 aria-label="GitHub"
               >
                 <GitHub width={20} height={20} />
               </a>
               <a
-                href="https://bsky.app/profile/stoat.chat"
+                href={BLUESKY_URL}
                 target="_blank"
                 aria-label="Bluesky"
               >

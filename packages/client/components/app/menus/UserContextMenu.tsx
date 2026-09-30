@@ -1,4 +1,5 @@
 import { Trans } from "@lingui/solid/macro";
+import { adminPanelInspectUrl } from "@revolt/common/lib/links";
 import { useClient } from "@revolt/client";
 import { useModals } from "@revolt/modal";
 import { useSmartParams } from "@revolt/routing";
@@ -209,7 +210,7 @@ export function UserContextMenu(props: {
    */
   function openAdminPanel() {
     window.open(
-      `https://admin.dawn-chat.com/panel/inspect/user/${props.user.id}`,
+      adminPanelInspectUrl("user", props.user.id),
       "_blank",
     );
   }

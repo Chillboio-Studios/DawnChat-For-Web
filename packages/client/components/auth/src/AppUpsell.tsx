@@ -4,16 +4,14 @@ import { QRCodeSVG } from "solid-qr-code";
 import { Trans } from "@lingui/solid/macro";
 import { styled } from "styled-system/jsx";
 
-import { PLAY_STORE_URL } from "@revolt/common/lib/links";
+import {
+  DESKTOP_DOWNLOAD_URL,
+  PLAY_STORE_URL,
+} from "@revolt/common/lib/links";
 import { useInstance } from "@revolt/instance";
 
 import AndroidPhone from "../../../public/assets/inapp-promotion/web/android-phone.png";
 import DesktopApp from "../../../public/assets/inapp-promotion/web/desktop-app.webp";
-
-/**
- * Download page for the desktop app
- */
-const DESKTOP_DOWNLOAD_URL = "https://stoat.chat/download";
 
 /**
  * Widths at which the auth page shows its side panel (it hides below 900px)
@@ -233,7 +231,7 @@ export function AppUpsell() {
             </h2>
             <p>
               <Trans>
-                Get Stoat for Android and keep up with your friends wherever you
+                Get DawnChat for Android and keep up with your friends wherever you
                 are.
               </Trans>
             </p>
@@ -275,7 +273,7 @@ export function AppUpsell() {
           <Copy>
             <h2>
               <Trans>
-                Stoat, right on <span>your desktop.</span>
+                DawnChat, right on <span>your desktop.</span>
               </Trans>
             </h2>
             <p>
