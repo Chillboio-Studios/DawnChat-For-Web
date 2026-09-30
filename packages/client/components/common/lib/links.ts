@@ -23,6 +23,12 @@ export const DAWNCHAT_API_URL = `https://${DAWNCHAT_API_HOST}`;
 export const DAWNCHAT_CONFIG_PATH = "/.well-known/stoat";
 export const DAWNCHAT_CHAT_URL = "https://chat.dawn-chat.com";
 export const DAWNCHAT_APP_URL = "https://app.dawn-chat.com";
+export const DAWNCHAT_OFFICIAL_HOSTS = [
+  DAWNCHAT_HOST,
+  DAWNCHAT_API_HOST,
+  new URL(DAWNCHAT_CHAT_URL).host,
+  new URL(DAWNCHAT_APP_URL).host,
+] as const;
 
 export const ADMIN_PANEL_HOST = "admin.dawn-chat.com";
 export const ADMIN_PANEL_URL = `https://${ADMIN_PANEL_HOST}`;

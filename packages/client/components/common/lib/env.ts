@@ -1,4 +1,8 @@
-import { DAWNCHAT_API_HOST, DAWNCHAT_API_URL, DAWNCHAT_HOST } from "./links";
+import {
+  DAWNCHAT_API_URL,
+  DAWNCHAT_HOST,
+  DAWNCHAT_OFFICIAL_HOSTS,
+} from "./links";
 
 export const STOAT_HOST = DAWNCHAT_HOST;
 
@@ -18,10 +22,7 @@ const getEnv = (name: string, devOnly?: boolean) =>
 
 /** If host is Stoat, normalize to STOAT_HOST, else return host */
 export const normalizeHost = (host: string) =>
-  [
-    // historically...
-    DAWNCHAT_API_HOST,
-  ].includes(host)
+  (DAWNCHAT_OFFICIAL_HOSTS as readonly string[]).includes(host)
     ? STOAT_HOST
     : host;
 
