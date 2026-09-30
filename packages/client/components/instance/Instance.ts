@@ -57,7 +57,7 @@ export default class Instance {
 
     const hostUrl = new URL(`https://${host}`);
     this.origin = hostUrl.origin;
-    this.isStoat = host === STOAT_HOST;
+    this.isStoat = true;
     this.#nav = nav;
   }
 
