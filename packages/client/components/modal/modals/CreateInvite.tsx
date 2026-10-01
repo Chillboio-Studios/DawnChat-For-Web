@@ -33,7 +33,7 @@ const Invite = styled("div", {
 /** Get absolute link from invite id */
 export const getInviteLink = (id: string, inst: Instance) =>
   inst.isStoat
-    ? `${DAWNCHAT_INVITE_SHORTENER_URL}/${id}`
+    ? `${DAWNCHAT_INVITE_SHORTENER_URL}${id}`
     : inst.href(`/invite/${id}`);
 
 /**
