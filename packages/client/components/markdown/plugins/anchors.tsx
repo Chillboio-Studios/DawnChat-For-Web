@@ -91,7 +91,7 @@ export function RenderAnchor(
     // Remap discover links to native links
     if (INVITE_SHORTENER_ORIGINS.includes(url.origin as (typeof INVITE_SHORTENER_ORIGINS)[number])) {
       if (/^\/[\w\d]+$/.test(url.pathname)) {
-        url = new URL(`/dc${url.pathname}`, instance.origin);
+        url = new URL(`/invite${url.pathname}`, instance.origin);
       } else if (url.pathname.startsWith("/discover")) {
         url = new URL(url.pathname, instance.origin);
       }

@@ -26,7 +26,7 @@ export function Invite(props: Props) {
   const { showError } = useModals();
 
   const query = useQuery(() => ({
-    queryKey: ["dc", props.code],
+    queryKey: ["invite", props.code],
     queryFn: () =>
       client()
         .api.get(`/invites/${props.code as ""}`)
