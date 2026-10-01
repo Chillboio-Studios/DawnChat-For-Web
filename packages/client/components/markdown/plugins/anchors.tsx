@@ -51,7 +51,7 @@ const internalLink = cva({
 function inAppScope(link: URL, root: string): boolean {
   return (
     [root, ...DAWNCHAT_IN_APP_ORIGINS].includes(link.origin) &&
-    /\/(i|app|home|pwa|dev|dc|invite|bot|friends|server|channel)\/?/.test(
+    /\/(i|app|home|pwa|dev|invite|bot|friends|server|channel)\/?/.test(
       link.pathname,
     )
   );
