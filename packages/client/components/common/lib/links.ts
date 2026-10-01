@@ -85,7 +85,7 @@ export const GIFBOX_UPLOAD_URL = "https://gifbox.me/upload";
 
 
 
-export const DAWNCHAT_INVITE_SHORTENER_URL = "https://csinvite.net/dc";
+export const DAWNCHAT_INVITE_SHORTENER_URL = "https://csinvite.net/dc/";
 export const DAWNCHAT_DISCOVER_URL = "https://csinvite.net";
 
 
