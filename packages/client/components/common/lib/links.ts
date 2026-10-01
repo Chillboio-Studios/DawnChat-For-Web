@@ -89,7 +89,6 @@ export const DAWNCHAT_DISCOVER_URL = "https://stt.gg";
 
 
 export const INVITE_SHORTENER_ORIGINS = [
-  "https://rvlt.gg",
   DAWNCHAT_INVITE_SHORTENER_URL,
 ] as const;
 
