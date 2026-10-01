@@ -86,12 +86,12 @@ export const GIFBOX_UPLOAD_URL = "https://gifbox.me/upload";
 
 
 export const DAWNCHAT_INVITE_SHORTENER_URL = "https://csinvite.net/dc";
-export const DAWNCHAT_DISCOVER_URL = "https://stt.gg";
+export const DAWNCHAT_DISCOVER_URL = "https://csinvite.net";
 
 
 export const INVITE_SHORTENER_ORIGINS = [
   DAWNCHAT_INVITE_SHORTENER_URL,
-  "https://csinvite.net"
+  "https://csinvite.net",
 ] as const;
 
 
@@ -106,7 +106,7 @@ export const DAWNCHAT_IN_APP_ORIGINS = [
   DAWNCHAT_CHAT_URL,
   "https://dawn-chat.com",
   "https://csinvite.net",
-  DAWNCHAT_APP_URL
+  DAWNCHAT_APP_URL,
 ] as const;
 
 
