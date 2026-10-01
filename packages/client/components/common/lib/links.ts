@@ -22,7 +22,7 @@ export const DAWNCHAT_API_HOST = "api.dawn-chat.com";
 export const DAWNCHAT_API_URL = `https://${DAWNCHAT_API_HOST}`;
 export const DAWNCHAT_CONFIG_PATH = "/.well-known/stoat";
 export const DAWNCHAT_CHAT_URL = "https://chat.dawn-chat.com";
-export const DAWNCHAT_APP_URL = "https://chat.dawn-chat.com";
+export const DAWNCHAT_APP_URL = "https://app.dawn-chat.com";
 export const DAWNCHAT_OFFICIAL_HOSTS = [
   DAWNCHAT_HOST,
   "https://csinvite.net",
