@@ -90,6 +90,7 @@ export const DAWNCHAT_DISCOVER_URL = "https://stt.gg";
 
 export const INVITE_SHORTENER_ORIGINS = [
   DAWNCHAT_INVITE_SHORTENER_URL,
+  "https://csinvite.net"
 ] as const;
 
 
@@ -103,7 +104,8 @@ export const DAWNCHAT_WEBMAIL_URL = "https://mail.vrcband.com";
 export const DAWNCHAT_IN_APP_ORIGINS = [
   DAWNCHAT_CHAT_URL,
   "https://dawn-chat.com",
-  DAWNCHAT_APP_URL,
+  "https://csinvite.net",
+  DAWNCHAT_APP_URL
 ] as const;
 
 
