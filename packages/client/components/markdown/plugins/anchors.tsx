@@ -51,7 +51,7 @@ const internalLink = cva({
 function inAppScope(link: URL, root: string): boolean {
   return (
     [root, ...DAWNCHAT_IN_APP_ORIGINS].includes(link.origin) &&
-    /\/(i|app|home|pwa|dev|invite|bot|friends|server|channel)\/?/.test(
+    /\/(i|app|home|pwa|dev|dc|invite|bot|friends|server|channel)\/?/.test(
       link.pathname,
     )
   );
@@ -91,7 +91,7 @@ export function RenderAnchor(
     // Remap discover links to native links
     if (INVITE_SHORTENER_ORIGINS.includes(url.origin as (typeof INVITE_SHORTENER_ORIGINS)[number])) {
       if (/^\/[\w\d]+$/.test(url.pathname)) {
-        url = new URL(`/invite${url.pathname}`, instance.origin);
+        url = new URL(`/dc${url.pathname}`, instance.origin);
       } else if (url.pathname.startsWith("/discover")) {
         url = new URL(url.pathname, instance.origin);
       }

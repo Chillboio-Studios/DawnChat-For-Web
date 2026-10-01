@@ -533,7 +533,7 @@ export default class ClientController {
 
     if (session.result === "Disabled") {
       // TODO
-      alert("Account is disabled, run special logic here.");
+      alert("Account is disabled, if you think this is a mistake, please contact support.");
       return false;
     }
 

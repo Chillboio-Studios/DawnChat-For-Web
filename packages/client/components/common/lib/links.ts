@@ -17,14 +17,15 @@ export const DAWNCHAT_DONATION_URL = "https://www.chillboiostudios.com/donate";
 export const DAWNCHAT_LOUNGE_SERVER_ID = "01M3615E99PYEQZ26AQ9RV6WJG";
 export const DAWNCHAT_LOUNGE_HOME_SERVER_ID = "01M3615E99PYEQZ26AQ9RV6WJG";
 
-export const DAWNCHAT_HOST = "dawn-chat.com";
+export const DAWNCHAT_HOST = "chat.dawn-chat.com";
 export const DAWNCHAT_API_HOST = "api.dawn-chat.com";
 export const DAWNCHAT_API_URL = `https://${DAWNCHAT_API_HOST}`;
 export const DAWNCHAT_CONFIG_PATH = "/.well-known/stoat";
 export const DAWNCHAT_CHAT_URL = "https://chat.dawn-chat.com";
-export const DAWNCHAT_APP_URL = "https://app.dawn-chat.com";
+export const DAWNCHAT_APP_URL = "https://chat.dawn-chat.com";
 export const DAWNCHAT_OFFICIAL_HOSTS = [
   DAWNCHAT_HOST,
+  "https://csinvite.net",
   DAWNCHAT_API_HOST,
   new URL(DAWNCHAT_CHAT_URL).host,
   new URL(DAWNCHAT_APP_URL).host,
