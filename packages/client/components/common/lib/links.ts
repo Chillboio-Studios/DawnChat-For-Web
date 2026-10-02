@@ -1,6 +1,6 @@
 export const PLAY_STORE_URL = "#";
 
-export const DESKTOP_DOWNLOAD_URL = "#";
+export const DESKTOP_DOWNLOAD_URL = "https://github.com/Chillboio-Studios/Dawnchat-For-DESKTOP/releases/latest";
 
 export const ROADMAP_URL = "#";
 
@@ -8,7 +8,7 @@ export const FEEDBACK_URL = "#";
 
 export const BUG_TRACKER_URL = "#";
 
-export const GITHUB_URL = "#";
+export const GITHUB_URL = "https://github.com/Chillboio-Studios";
 
 export const BLUESKY_URL = "#";
 
