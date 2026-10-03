@@ -76,12 +76,39 @@ function SelectInput(props: { kind: MediaDeviceKind }) {
       // Filter out the virtual sink
       .filter((dev) => dev.label.split(":").pop() !== stoatSinkName);
 
-    //Ensure default is at top
-    let d = devs.find((d) => d.deviceId === "default");
-    opts.default = { title: d?.label ?? "Default" };
+    // Filter out completely empty dummy devices (no deviceId and no label)
+    const validDevs = devs.filter((dev) => dev.deviceId || dev.label);
 
-    for (d of devs)
-      if (d.deviceId !== "default") opts[d.deviceId] = { title: d.label };
+    // Ensure default is at top
+    let d = validDevs.find((dev) => dev.deviceId === "default");
+    let defaultTitle = d?.label;
+    if (!defaultTitle || !defaultTitle.trim()) {
+      defaultTitle = "Default";
+    }
+    opts.default = { title: defaultTitle };
+
+    let micCount = 0;
+    let speakerCount = 0;
+    let cameraCount = 0;
+
+    for (const dev of validDevs) {
+      if (dev.deviceId === "default") continue;
+
+      let title = dev.label;
+      if (!title || !title.trim()) {
+        if (props.kind === "audioinput") {
+          micCount++;
+          title = `Microphone ${micCount}`;
+        } else if (props.kind === "audiooutput") {
+          speakerCount++;
+          title = `Speaker ${speakerCount}`;
+        } else {
+          cameraCount++;
+          title = `Camera ${cameraCount}`;
+        }
+      }
+      opts[dev.deviceId] = { title };
+    }
     return opts;
   });
 

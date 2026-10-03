@@ -101,6 +101,7 @@ class Voice {
   private config;
   private limits;
   private screenShareTracks: Set<string>;
+  private screenShareStopGuard = false;
   private voiceProcessor?: VoiceProcessor;
 
   constructor(
@@ -502,11 +503,16 @@ class Voice {
     if (!room) throw "invalid state";
 
     if (this.screenshare()) {
-      await room.localParticipant.setScreenShareEnabled(false);
-
-      this.#setScreenshare(room.localParticipant.isScreenShareEnabled);
-
-      this.sound.playSound("streamEnd");
+      if (this.screenShareStopGuard) return;
+      this.screenShareStopGuard = true;
+      try {
+        await room.localParticipant.setScreenShareEnabled(false);
+        this.#setScreenshare(room.localParticipant.isScreenShareEnabled);
+        this.sound.playSound("streamEnd");
+      } finally {
+        this.screenShareStopGuard = false;
+      }
+      return;
     } else {
       if (!this.screenShareSupported) return;
 
@@ -571,7 +577,8 @@ class Voice {
           // This catches the ending and disables screen sharing on our side. If this weren't here,
           // livekit would still share stream audio after closing the window being streamed.
           localTrack.on("ended", () => {
-            this.toggleScreenshare();
+            if (this.screenShareStopGuard) return;
+            this.#setScreenshare(false);
             const oldAudioTrack = room.localParticipant.getTrackPublication(
               Track.Source.ScreenShareAudio,
             );
