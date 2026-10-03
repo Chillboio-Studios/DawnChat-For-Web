@@ -2,7 +2,6 @@ import { getVirtmic } from "./virtualMic";
 import { isMobileBrowser } from "@livekit/components-core";
 
 export { useVoice, VoiceContext } from "./state";
-export type { AndroidVoiceParticipant } from "../native/android";
 
 export { InRoom } from "./components/InRoom";
 export { RoomAudioManager } from "./components/RoomAudioManager";
