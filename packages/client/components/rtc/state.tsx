@@ -16,6 +16,7 @@ import {
 } from "solid-livekit-components";
 
 import {
+  LocalVideoTrack,
   LocalTrackPublication,
   Room,
   ScreenShareCaptureOptions,
@@ -102,6 +103,8 @@ class Voice {
   private limits;
   private screenShareTracks: Set<string>;
   private screenShareStopGuard = false;
+  private androidScreenShareTrack?: LocalVideoTrack;
+  private androidScreenShareCleanup?: () => void;
   private voiceProcessor?: VoiceProcessor;
 
   constructor(
@@ -350,6 +353,7 @@ class Voice {
     this.device.releaseWakeLock();
 
     try {
+      void this.stopAndroidScreenShare();
       const room = this.room();
       if (!room) return;
 
@@ -434,6 +438,94 @@ class Voice {
     }
   }
 
+  private async stopAndroidScreenShare(room?: Room) {
+    const activeRoom = room ?? this.room();
+    const track = this.androidScreenShareTrack;
+
+    if (track && activeRoom) {
+      try {
+        await activeRoom.localParticipant.unpublishTrack(track);
+      } catch (error) {
+        console.warn("[DawnChatScreenShare] failed to unpublish native screen track", error);
+      }
+    }
+
+    this.androidScreenShareCleanup?.();
+    this.androidScreenShareCleanup = undefined;
+    this.androidScreenShareTrack = undefined;
+  }
+
+  private async publishAndroidScreenShare(room: Room) {
+    if (this.androidScreenShareTrack) {
+      return this.androidScreenShareTrack;
+    }
+    const androidBridge = window.native.android;
+    if (!androidBridge) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 1280;
+    canvas.height = 720;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    if (!context || !("captureStream" in canvas)) {
+      console.warn("[DawnChatScreenShare] canvas capture is unavailable in this browser");
+      return;
+    }
+
+    const stream = canvas.captureStream(24);
+    const [videoTrack] = stream.getVideoTracks();
+    if (!videoTrack) {
+      console.warn("[DawnChatScreenShare] no native capture video track available");
+      return;
+    }
+
+    const localTrack = new LocalVideoTrack(videoTrack, undefined, false);
+    localTrack.source = Track.Source.ScreenShare;
+    localTrack.mediaStreamTrack.contentHint = "motion";
+
+    const removeFrameListener = androidBridge.on("screenCapture.frame", (payload) => {
+      const frame = payload as { data?: string; width?: number; height?: number } | undefined;
+      const dataUrl = frame?.data;
+      if (!dataUrl || !context) return;
+
+      const image = new Image();
+      image.onload = () => {
+        const width = Number(frame?.width) || canvas.width;
+        const height = Number(frame?.height) || canvas.height;
+        if (width !== canvas.width || height !== canvas.height) {
+          canvas.width = width;
+          canvas.height = height;
+        }
+
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      };
+      image.src = dataUrl;
+    });
+    const removeStoppedListener = androidBridge.on("screenCapture.stopped", () => {
+      if (this.screenShareStopGuard) return;
+      void this.stopAndroidScreenShare(room).finally(() => {
+        this.#setScreenshare(false);
+        this.sound.playSound("streamEnd");
+      });
+    });
+
+    this.androidScreenShareTrack = localTrack;
+    this.androidScreenShareCleanup = () => {
+      removeFrameListener();
+      removeStoppedListener();
+    };
+    try {
+      await room.localParticipant.publishTrack(localTrack, {
+        source: Track.Source.ScreenShare,
+        screenShareEncoding: ScreenSharePresets.h720fps30.encoding,
+      });
+    } catch (error) {
+      await this.stopAndroidScreenShare(room);
+      throw error;
+    }
+    return localTrack;
+  }
+
   /**
    * Get the enabled screen share qualities. "low" will always be enabled.
    * Each screen share quality is checked against the limit if the limit is available on the client.
@@ -507,6 +599,7 @@ class Voice {
         if (this.screenShareStopGuard) return;
         this.screenShareStopGuard = true;
         try {
+          await this.stopAndroidScreenShare(room);
           if (window.native.android.stopScreenShare) {
             await window.native.android.stopScreenShare();
           }
@@ -524,9 +617,22 @@ class Voice {
           audio: !!this.#settings.screenShareAudio,
         });
         if (started) {
+          const published = await this.publishAndroidScreenShare(room);
+          if (!published) {
+            if (window.native.android.stopScreenShare) {
+              await window.native.android.stopScreenShare();
+            }
+            return;
+          }
           this.#setScreenshare(true);
           this.sound.playSound("streamStart");
         }
+      } catch (error) {
+        await this.stopAndroidScreenShare(room);
+        if (window.native.android.stopScreenShare) {
+          await window.native.android.stopScreenShare();
+        }
+        this.onErr(error);
       } finally {
         this.screenShareStopGuard = false;
       }
