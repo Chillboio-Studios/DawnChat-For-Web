@@ -30,6 +30,7 @@ import { SoundController, useClient, useSound } from "@revolt/client";
 import { useInstance } from "@revolt/instance";
 import { ModalController, useModals } from "@revolt/modal";
 import { useState } from "@revolt/state";
+import { userInformation } from "@revolt/markdown/users";
 import {
   NoiseSuppresionState,
   ScreenShareQualityName,
@@ -39,10 +40,12 @@ import { VoiceCallCardContext } from "@revolt/ui/components/features/voice/callC
 
 import { Device, useDevice } from "@revolt/common";
 import {
+  AndroidDisplayInfo,
   AndroidVoiceParticipant,
   AndroidVoiceState,
   AndroidVoiceStateName,
   androidNative,
+  cssColorToHex,
   isAndroidShell,
 } from "../native/android";
 import { InRoom } from "./components/InRoom";
@@ -79,6 +82,7 @@ class Voice {
 
   #nativeChannelId: Accessor<string | undefined>;
   #setNativeChannelId: Setter<string | undefined>;
+  #lastDisplayInfo?: string;
 
   channel: Accessor<Channel | undefined>;
   #setChannel: Setter<Channel | undefined>;
@@ -197,7 +201,51 @@ class Voice {
       });
 
       this.restoreAndroid();
+
+      createEffect(() => {
+        const channel = this.channel();
+        const participants = this.participants();
+        if (channel) this.pushDisplayInfo(channel, participants);
+      });
     }
+  }
+
+  private pushDisplayInfo(
+    channel: Channel,
+    participants: AndroidVoiceParticipant[],
+  ) {
+    const client = this.#client();
+    const server = channel.server;
+    const info: AndroidDisplayInfo = {
+      channelName: channel.name ?? channel.id,
+      serverName: server?.name,
+      serverIconUrl: server?.animatedIconURL,
+      participants: participants.map((p) => {
+        const user = client.users.get(p.identity);
+        const member = server
+          ? client.serverMembers.getByKey({ server: server.id, user: p.identity })
+          : undefined;
+        const { username, avatar, colour } = userInformation(user, member);
+        const color =
+          colour && !colour.includes("gradient")
+            ? cssColorToHex(colour)?.slice(0, 7)
+            : undefined;
+        return {
+          identity: p.identity,
+          name: user || member ? username : p.name || username,
+          avatarUrl: avatar,
+          color,
+          isBot: !!user?.bot,
+        };
+      }),
+    };
+
+    const json = JSON.stringify(info);
+    if (json === this.#lastDisplayInfo) return;
+    this.#lastDisplayInfo = json;
+    androidNative.voice.setDisplayInfo(info).catch(() => {
+      this.#lastDisplayInfo = undefined;
+    });
   }
 
   private attachAndroid() {
@@ -305,6 +353,8 @@ class Voice {
           noiseSuppression: this.#settings.noiseSupression === "browser",
         },
       });
+      this.#lastDisplayInfo = undefined;
+      this.pushDisplayInfo(channel, untrack(this.participants));
     } catch (e) {
       this.disconnect();
       this.onErr(e);

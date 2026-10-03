@@ -4,6 +4,8 @@ import { useClientLifecycle } from "@revolt/client";
 import { State } from "@revolt/client/Controller";
 import { useState } from "@revolt/state";
 
+import { androidNative, cssColorToHex, isAndroidShell } from "../../native/android";
+
 import {
   createMaterialColourVariables,
   createMduiColourTriplets,
@@ -13,6 +15,40 @@ import { SlideState } from "../components/navigation/SlideDrawer";
 import { Masks } from "./Masks";
 import { FONTS, MONOSPACE_FONTS } from "./fonts";
 import { legacyThemeUnsetShim } from "./legacyThemeGeneratorCode";
+
+let themeTimer: ReturnType<typeof setTimeout> | undefined;
+let lastTheme = "";
+
+function pushAndroidTheme(
+  cssProps: Record<string, string>,
+  theme: { activeTheme: { darkMode: boolean }; interfaceFont: string },
+) {
+  const dark = theme.activeTheme.darkMode;
+  const fontFamily = theme.interfaceFont;
+  clearTimeout(themeTimer);
+  themeTimer = setTimeout(() => {
+    const colors: Record<string, string> = {};
+    const radii: Record<string, number> = {};
+    for (const [key, value] of Object.entries(cssProps)) {
+      if (key.startsWith("--md-sys-color-")) {
+        const hex = cssColorToHex(value);
+        if (hex) colors[key.slice("--md-sys-color-".length)] = hex;
+      } else if (key.startsWith("--borderRadius-")) {
+        const name = key.slice("--borderRadius-".length);
+        if (name === "full") radii[name] = 9999;
+        else if (/^\d+(\.\d+)?px$/.test(value)) radii[name] = parseFloat(value);
+      }
+    }
+
+    const payload = { dark, colors, radii, fontFamily };
+    const json = JSON.stringify(payload);
+    if (json === lastTheme) return;
+    lastTheme = json;
+    androidNative.ui.setTheme(payload).catch(() => {
+      lastTheme = "";
+    });
+  }, 150);
+}
 
 /**
  * Component for loading theme variables into root
@@ -61,6 +97,8 @@ export function LoadTheme() {
     const cssProps = getCssProps();
     for (const [key, value] of Object.entries(cssProps))
       document.body.style.setProperty(key, value);
+
+    if (isAndroidShell()) pushAndroidTheme(cssProps, state.theme);
   });
 
   //Set PWA theme color
@@ -80,6 +118,8 @@ export function LoadTheme() {
 
     for (const meta of document.head.querySelectorAll("meta[name=theme-color]"))
       (meta as HTMLMetaElement).content = color;
+
+    if (isAndroidShell()) androidNative.ui.setSystemBars(color)?.catch(() => {});
   });
 
   return <Masks />;
