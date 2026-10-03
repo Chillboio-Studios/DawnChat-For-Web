@@ -2,6 +2,8 @@ export type AndroidBridge = {
   platformVersion: number;
   call(method: string, args?: unknown): Promise<unknown>;
   on(event: string, cb: (payload: unknown) => void): () => void;
+  startScreenShare?(options?: { audio?: boolean }): Promise<boolean>;
+  stopScreenShare?(): Promise<boolean>;
 };
 
 export function isAndroidShell(): boolean {

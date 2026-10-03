@@ -502,6 +502,37 @@ class Voice {
     const room = this.room();
     if (!room) throw "invalid state";
 
+    if (isAndroidShell() && window.native?.android?.startScreenShare) {
+      if (this.screenshare()) {
+        if (this.screenShareStopGuard) return;
+        this.screenShareStopGuard = true;
+        try {
+          if (window.native.android.stopScreenShare) {
+            await window.native.android.stopScreenShare();
+          }
+          this.#setScreenshare(false);
+          this.sound.playSound("streamEnd");
+        } finally {
+          this.screenShareStopGuard = false;
+        }
+        return;
+      }
+
+      this.screenShareStopGuard = true;
+      try {
+        const started = await window.native.android.startScreenShare({
+          audio: !!this.#settings.screenShareAudio,
+        });
+        if (started) {
+          this.#setScreenshare(true);
+          this.sound.playSound("streamStart");
+        }
+      } finally {
+        this.screenShareStopGuard = false;
+      }
+      return;
+    }
+
     if (this.screenshare()) {
       if (this.screenShareStopGuard) return;
       this.screenShareStopGuard = true;
