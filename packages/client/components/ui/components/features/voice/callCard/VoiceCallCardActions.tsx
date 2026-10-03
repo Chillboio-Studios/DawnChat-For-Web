@@ -181,10 +181,10 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
         }
       >
         <Show
-          when={!limits().video || voice.screenshare()}
-          fallback={<Symbol>stop_screen_share</Symbol>}
+          when={voice.screenshare()}
+          fallback={<Symbol>screen_share</Symbol>}
         >
-          <Symbol>screen_share</Symbol>
+          <Symbol>stop_screen_share</Symbol>
         </Show>
       </IconButton>
       <Button

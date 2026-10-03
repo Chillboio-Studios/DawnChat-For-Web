@@ -14,7 +14,7 @@ import { styled } from "styled-system/jsx";
 
 import { UserContextMenu } from "@revolt/app";
 import { useUser } from "@revolt/markdown/users";
-import { useVoice } from "@revolt/rtc";
+import { useVoice, type AndroidVoiceParticipant } from "@revolt/rtc";
 import { useState } from "@revolt/state";
 import { Avatar } from "@revolt/ui/components/design";
 import { Row } from "@revolt/ui/components/layout";
@@ -173,6 +173,68 @@ export function ParticipantTile(props: TileProps) {
         </Overlay>
       </div>
     </Show>
+  );
+}
+
+/**
+ * Individual participant tile for Android native voice calls
+ */
+export function AndroidParticipantTile(props: {
+  participant: AndroidVoiceParticipant;
+  focus?: boolean;
+}) {
+  const voice = useVoice();
+  const user = useUser(props.participant.identity);
+
+  return (
+    <div
+      class={
+        tile({
+          speaking: props.participant.speaking,
+          video:
+            props.participant.cameraEnabled || props.participant.screenSharing,
+          fullscreen: voice.layout() === "fullscreen",
+          focus: props.focus,
+        }) + " vc_tile"
+      }
+      onClick={() => voice.openNativeUI()}
+      use:floating={{
+        contextMenu: () => (
+          <Show when={user().user}>
+            <UserContextMenu
+              user={user().user!}
+              member={user().member}
+              inVoice={true}
+              isScreenshare={props.participant.screenSharing}
+            />
+          </Show>
+        ),
+      }}
+    >
+      <AvatarOnly>
+        <Avatar
+          src={user().avatar}
+          fallback={user().username || props.participant.name}
+          size={48}
+          interactive={false}
+        />
+      </AvatarOnly>
+      <Overlay>
+        <OverlayInner>
+          <OverflowingText>
+            {user().username || props.participant.name}
+          </OverflowingText>
+          <Row gap="md">
+            <VoiceStatefulUserIcons
+              userId={props.participant.identity}
+              muted={!props.participant.micEnabled}
+              camera={props.participant.cameraEnabled}
+              screenshare={props.participant.screenSharing}
+            />
+          </Row>
+        </OverlayInner>
+      </Overlay>
+    </div>
   );
 }
 

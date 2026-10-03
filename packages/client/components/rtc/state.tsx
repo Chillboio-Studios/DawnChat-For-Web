@@ -74,7 +74,7 @@ class Voice {
   #client: Accessor<Client>;
 
   /** Call is handled by the Android shell instead of a livekit Room */
-  readonly isNative = isAndroidShell();
+  readonly isNative = false; // Temporarily disabled (was isAndroidShell()) to test web LiveKit
   #nativeUnsubs?: (() => void)[];
 
   participants: Accessor<AndroidVoiceParticipant[]>;

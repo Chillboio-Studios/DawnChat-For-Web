@@ -4,14 +4,14 @@ import { createEffect, createMemo, For, onMount, Show } from "solid-js";
 import { TrackLoop } from "solid-livekit-components";
 import { styled } from "styled-system/jsx";
 
+import { useUser } from "@revolt/client";
 import { useDevice } from "@revolt/common";
-import { InRoom, useVoice } from "@revolt/rtc";
+import { InRoom, useVoice, type AndroidVoiceParticipant } from "@revolt/rtc";
 import { IconButton } from "@revolt/ui/components/design";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { scrollableStyles } from "@revolt/ui/directives";
 
-import { AndroidCallBar } from "./AndroidCallBar";
-import { ParticipantTile, tile } from "./ParticipantTile";
+import { AndroidParticipantTile, ParticipantTile, tile } from "./ParticipantTile";
 import { VoiceCallCardActions } from "./VoiceCallCardActions";
 import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
 
@@ -20,21 +20,13 @@ import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
  */
 export function VoiceCallCardActiveRoom() {
   const voice = useVoice();
-
-  return (
-    <Show when={!voice.isNative} fallback={<AndroidCallBar size="sm" />}>
-      <VoiceCallCardWebRoom />
-    </Show>
-  );
-}
-
-function VoiceCallCardWebRoom() {
-  const voice = useVoice();
   const collapsed = createMemo(() => voice.layout() === "collapsed");
 
   return (
     <View collapsed={collapsed()}>
-      <Participants />
+      <Show when={!voice.isNative} fallback={<AndroidParticipants />}>
+        <Participants />
+      </Show>
       <VoiceCallControls>
         <VoiceCallControlHolder left collapsed={collapsed()}>
           <VoiceCallCardStatus />
@@ -55,6 +47,21 @@ function LayoutButtons() {
 
   return (
     <>
+      <Show when={voice.isNative}>
+        <IconButton
+          size="sm"
+          variant="standard"
+          onPress={() => voice.openNativeUI()}
+          use:floating={{
+            tooltip: {
+              placement: "top",
+              content: t`Open call window`,
+            },
+          }}
+        >
+          <Symbol>open_in_new</Symbol>
+        </IconButton>
+      </Show>
       {/* TODO: Refactor call controls on mobile to make these buttons not overflow */}
       <Show when={device.layout() === "desktop"}>
         <IconButton
@@ -212,6 +219,60 @@ function FocusedParticipant() {
         )}
       </TrackLoop>
     </Show>
+  );
+}
+
+/**
+ * Show a grid of participants for Android native voice calls
+ */
+function AndroidParticipants() {
+  const voice = useVoice();
+  const selfUser = useUser();
+  let callRef: HTMLDivElement | undefined;
+
+  const participantsList = createMemo<AndroidVoiceParticipant[]>(() => {
+    const list = voice.participants();
+    if (list && list.length > 0) return list;
+    const self = selfUser();
+    if (self) {
+      return [
+        {
+          identity: self.id,
+          name: self.username,
+          isLocal: true,
+          speaking: false,
+          micEnabled: voice.microphone(),
+          cameraEnabled: voice.video(),
+          screenSharing: voice.screenshare(),
+        },
+      ];
+    }
+    return [];
+  });
+
+  const tileWidth = () => {
+    const count = participantsList().length || 1;
+    const vidWidth = Math.round(100 / count);
+    return `max(min(${TILE_MIN_WIDTH}, 100%), ${vidWidth}% - var(--gap-md))`;
+  };
+
+  onMount(() => {
+    createResizeObserver(callRef, ({ width, height }, el) => {
+      if (el === callRef) {
+        el.style.setProperty("--vc-w", `${width}px`);
+        el.style.setProperty("--vc-h", `${height}px`);
+      }
+    });
+  });
+
+  return (
+    <Call ref={callRef} class={scrollableStyles()}>
+      <Grid style={{ "--vc-tile-width": tileWidth() }}>
+        <For each={participantsList()}>
+          {(participant) => <AndroidParticipantTile participant={participant} />}
+        </For>
+      </Grid>
+    </Call>
   );
 }
 
