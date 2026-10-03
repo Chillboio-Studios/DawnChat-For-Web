@@ -3,6 +3,7 @@ import { Show } from "solid-js";
 
 import { useNotifications } from "@revolt/client";
 import { useState } from "@revolt/state";
+import { isAndroidShell } from "../../../../../native/android";
 import { CategoryButton, Checkbox, Column, iconSize } from "@revolt/ui";
 
 import MdMarkUnreadChatAlt from "@material-design-icons/svg/outlined/mark_unread_chat_alt.svg?component-solid";
@@ -22,7 +23,12 @@ export default function Notifications(props: { isDesktop: boolean }) {
     <Column gap="lg">
       <Column>
         <CategoryButton.Group>
-          <Show when={settings.desktopNotificationsState !== "unsupported"}>
+          <Show
+            when={
+              !isAndroidShell() &&
+              settings.desktopNotificationsState !== "unsupported"
+            }
+          >
             <CategoryButton
               action={
                 <Checkbox

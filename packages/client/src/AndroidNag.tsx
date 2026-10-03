@@ -15,7 +15,8 @@ const ANDROID_NAG_DISMISS_KEY = "android-nag-dismissed";
 /**
  * Whether the current device is running Android
  */
-const isAndroid = () => /android/i.test(navigator.userAgent);
+const isAndroid = () =>
+  /android/i.test(navigator.userAgent) && !window.native;
 
 /**
  * Whether the origin of the request makes us eligible to show the nag screen

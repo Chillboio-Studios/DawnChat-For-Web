@@ -19,10 +19,29 @@ import { Avatar } from "@revolt/ui/components/design";
 import { Row } from "@revolt/ui/components/layout";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
+import { AndroidCallBar } from "./AndroidCallBar";
 import { VoiceCallCardActions } from "./VoiceCallCardActions";
 import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
 
 export function VoiceCallCardPiP() {
+  const voice = useVoice();
+
+  return (
+    <Show when={!voice.isNative} fallback={<AndroidPiP />}>
+      <VoiceCallCardWebPiP />
+    </Show>
+  );
+}
+
+function AndroidPiP() {
+  return (
+    <MiniCard>
+      <AndroidCallBar size="xs" />
+    </MiniCard>
+  );
+}
+
+function VoiceCallCardWebPiP() {
   const voice = useVoice();
   const audTracks = useTracks(
     [{ source: Track.Source.Microphone, withPlaceholder: true }],

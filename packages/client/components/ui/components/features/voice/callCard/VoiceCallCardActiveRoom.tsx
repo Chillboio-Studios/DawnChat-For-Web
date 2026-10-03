@@ -10,6 +10,7 @@ import { IconButton } from "@revolt/ui/components/design";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { scrollableStyles } from "@revolt/ui/directives";
 
+import { AndroidCallBar } from "./AndroidCallBar";
 import { ParticipantTile, tile } from "./ParticipantTile";
 import { VoiceCallCardActions } from "./VoiceCallCardActions";
 import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
@@ -18,6 +19,16 @@ import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
  * Call card (active)
  */
 export function VoiceCallCardActiveRoom() {
+  const voice = useVoice();
+
+  return (
+    <Show when={!voice.isNative} fallback={<AndroidCallBar size="sm" />}>
+      <VoiceCallCardWebRoom />
+    </Show>
+  );
+}
+
+function VoiceCallCardWebRoom() {
   const voice = useVoice();
   const collapsed = createMemo(() => voice.layout() === "collapsed");
 

@@ -100,7 +100,9 @@ const Config: SettingsConfiguration<{ server: Server }> = {
       case "voice":
         return <VoiceSettings />;
       case "notifications":
-        return <Notifications isDesktop={!!window.native} />;
+        return <Notifications
+            isDesktop={!!window.native && window.native.platform !== "android"}
+          />;
       default:
         return null;
     }
@@ -134,7 +136,12 @@ const Config: SettingsConfiguration<{ server: Server }> = {
             </span>{" "}
             <span class={css({ userSelect: "all" })}>{pkg.version}</span>
           </Text>
-          <Show when={window.native}>
+          <Show when={window.native?.platform === "android"}>
+            <Text class="label">
+              DawnChat Android WebView {window.native.versions.desktop()}
+            </Text>
+          </Show>
+          <Show when={window.native && window.native.platform !== "android"}>
             <Text class="label">
               DawnChat for Desktop {window.native.versions.desktop()}
             </Text>
@@ -306,7 +313,7 @@ const Config: SettingsConfiguration<{ server: Server }> = {
             // },
             {
               id: "native",
-              hidden: !window.native,
+              hidden: !window.native || window.native.platform === "android",
               icon: <Symbol size={20}>desktop_windows</Symbol>,
               title: <Trans>Desktop</Trans>,
             },

@@ -6,6 +6,7 @@ import {
   createSignal,
   JSX,
   Setter,
+  untrack,
   useContext,
 } from "solid-js";
 import {
@@ -23,9 +24,9 @@ import {
   VideoEncoding,
   VideoPresets,
 } from "livekit-client";
-import { Channel } from "stoat.js";
+import { Channel, Client } from "stoat.js";
 
-import { SoundController, useSound } from "@revolt/client";
+import { SoundController, useClient, useSound } from "@revolt/client";
 import { useInstance } from "@revolt/instance";
 import { ModalController, useModals } from "@revolt/modal";
 import { useState } from "@revolt/state";
@@ -37,6 +38,13 @@ import {
 import { VoiceCallCardContext } from "@revolt/ui/components/features/voice/callCard/VoiceCallCard";
 
 import { Device, useDevice } from "@revolt/common";
+import {
+  AndroidVoiceParticipant,
+  AndroidVoiceState,
+  AndroidVoiceStateName,
+  androidNative,
+  isAndroidShell,
+} from "../native/android";
 import { InRoom } from "./components/InRoom";
 import { RoomAudioManager } from "./components/RoomAudioManager";
 import { VoiceProcessor } from "./VoiceProcessor";
@@ -60,6 +68,17 @@ type ScreenShareQuality = Required<
 
 class Voice {
   #settings: VoiceSettings;
+  #client: Accessor<Client>;
+
+  /** Call is handled by the Android shell instead of a livekit Room */
+  readonly isNative = isAndroidShell();
+  #nativeUnsubs?: (() => void)[];
+
+  participants: Accessor<AndroidVoiceParticipant[]>;
+  #setParticipants: Setter<AndroidVoiceParticipant[]>;
+
+  #nativeChannelId: Accessor<string | undefined>;
+  #setNativeChannelId: Setter<string | undefined>;
 
   channel: Accessor<Channel | undefined>;
   #setChannel: Setter<Channel | undefined>;
@@ -104,10 +123,22 @@ class Voice {
     modals: ModalController,
     sound: SoundController,
     device: Device,
+    client: Accessor<Client>,
   ) {
     this.#settings = voiceSettings;
+    this.#client = client;
     this.sound = sound;
     this.device = device;
+
+    const [participants, setParticipants] = createSignal<
+      AndroidVoiceParticipant[]
+    >([]);
+    this.participants = participants;
+    this.#setParticipants = setParticipants;
+
+    const [nativeChannelId, setNativeChannelId] = createSignal<string>();
+    this.#nativeChannelId = nativeChannelId;
+    this.#setNativeChannelId = setNativeChannelId;
 
     const [channel, setChannel] = createSignal<Channel>();
     this.channel = channel;
@@ -155,6 +186,148 @@ class Voice {
 
     // Setup settings listeners
     this.settingsListeners();
+
+    if (this.isNative) {
+      // Resolve the channel of a call that was already active in the shell
+      createEffect(() => {
+        const id = this.#nativeChannelId();
+        if (!id || untrack(this.channel)?.id === id) return;
+        const channel = this.#client().channels.get(id);
+        if (channel) this.#setChannel(channel);
+      });
+
+      this.restoreAndroid();
+    }
+  }
+
+  private attachAndroid() {
+    if (this.#nativeUnsubs) return;
+    this.#nativeUnsubs = [
+      androidNative.voice.onState((s) => this.applyAndroidState(s)),
+      androidNative.voice.onError((e) => this.onErr(new Error(e.message))),
+      androidNative.voice.onEnded(({ reason }) => {
+        if (reason === "left" || reason === "hangup") {
+          this.resetAndroid(true);
+        } else {
+          this.#setState("DISCONNECTED");
+        }
+      }),
+    ];
+  }
+
+  private detachAndroid() {
+    this.#nativeUnsubs?.forEach((unsub) => unsub());
+    this.#nativeUnsubs = undefined;
+  }
+
+  private resetAndroid(playSound: boolean) {
+    this.detachAndroid();
+    batch(() => {
+      this.#setState("READY");
+      this.#setChannel();
+      this.#setNativeChannelId();
+      this.#setLayout();
+      this.#setVideo(false);
+      this.#setScreenshare(false);
+      this.#setParticipants([]);
+    });
+    if (playSound) this.sound.playSound("userLeaveVoice");
+  }
+
+  private applyAndroidState(s: AndroidVoiceState) {
+    if (s.state === "IDLE") {
+      if (this.channel() && this.#state() !== "CONNECTING") {
+        this.resetAndroid(false);
+      }
+      return;
+    }
+
+    const wasConnected = this.#state() === "CONNECTED";
+    const nativeState: Exclude<AndroidVoiceStateName, "IDLE"> = s.state;
+    batch(() => {
+      if (s.channelId && this.channel()?.id !== s.channelId) {
+        this.#setNativeChannelId(s.channelId);
+      }
+      this.#setParticipants(s.participants);
+      this.#setVideo(s.cameraEnabled);
+      this.#setScreenshare(s.screenShareEnabled);
+      this.#settings.deafen = s.deafened;
+      if (!s.deafened) this.#settings.micOn = s.micEnabled;
+      this.#setState(nativeState);
+    });
+
+    if (s.state === "CONNECTED" && !wasConnected) {
+      this.sound.playSound("userJoinVoice");
+    }
+  }
+
+  private async restoreAndroid() {
+    this.attachAndroid();
+    try {
+      const s = await androidNative.voice.getState();
+      if (s.state === "IDLE") {
+        if (!this.channel()) this.detachAndroid();
+      } else {
+        this.applyAndroidState(s);
+      }
+    } catch (e) {
+      console.error(e);
+      if (!this.channel()) this.detachAndroid();
+    }
+  }
+
+  private async connectAndroid(
+    channel: Channel,
+    auth?: { url: string; token: string },
+  ) {
+    batch(() => {
+      this.#setChannel(channel);
+      this.#setState("CONNECTING");
+      this.#setVideo(false);
+      this.#setScreenshare(false);
+      this.#setParticipants([]);
+    });
+    this.attachAndroid();
+
+    try {
+      const selected = await this.probeNode();
+      auth ??= await channel.joinCall(selected);
+
+      await androidNative.voice.join({
+        url: auth.url,
+        token: auth.token,
+        channelId: channel.id,
+        channelName: channel.name ?? channel.id,
+        options: {
+          micOn: this.#settings.micOn,
+          echoCancellation: this.#settings.echoCancellation ?? true,
+          autoGainControl: this.#settings.autoGainControl ?? true,
+          noiseSuppression: this.#settings.noiseSupression === "browser",
+        },
+      });
+    } catch (e) {
+      this.disconnect();
+      this.onErr(e);
+    }
+  }
+
+  private probeNode() {
+    return Promise.any(
+      this.config.features.livekit.nodes.map(async (node) => {
+        return fetch(node.public_url.replace("wss", "https")).then(() => {
+          return node.name;
+        });
+      }),
+    );
+  }
+
+  openNativeUI() {
+    return androidNative.voice.openUI().catch((e) => this.onErr(e));
+  }
+
+  /** Current state without tracking, for guards */
+  #state() {
+    return untrack(this.state);
   }
 
   // Dynamically set echo cancellation and gain control when the settings are changed
@@ -210,6 +383,10 @@ class Voice {
     this.disconnect();
 
     this.device.setWakeLocked();
+
+    if (this.isNative) {
+      return this.connectAndroid(channel, auth);
+    }
 
     const room = new Room({
       audioCaptureDefaults: {
@@ -313,13 +490,7 @@ class Voice {
     });
 
     // Gather latency
-    const selected = await Promise.any(
-      this.config.features.livekit.nodes.map(async (node) => {
-        return fetch(node.public_url.replace("wss", "https")).then(() => {
-          return node.name;
-        });
-      }),
-    );
+    const selected = await this.probeNode();
 
     if (!auth) {
       auth = await channel.joinCall(selected);
@@ -332,6 +503,15 @@ class Voice {
 
   disconnect() {
     this.device.releaseWakeLock();
+
+    if (this.isNative) {
+      if (this.channel()) {
+        androidNative.voice.leave().catch(console.error);
+        this.resetAndroid(true);
+      }
+      return;
+    }
+
     try {
       const room = this.room();
       if (!room) return;
@@ -356,6 +536,23 @@ class Voice {
   }
 
   async toggleDeafen(fromMute?: boolean) {
+    if (this.isNative) {
+      try {
+        const deafen = !this.#settings.deafen;
+        const micOn = fromMute ? true : this.#settings.micOn;
+        await androidNative.voice.setDeafen(deafen);
+        await androidNative.voice.setMicrophone(micOn && !deafen);
+        batch(() => {
+          this.#settings.deafen = deafen;
+          this.#settings.micOn = micOn;
+        });
+        this.sound.playSound(deafen ? "deafen" : "undeafen");
+      } catch (e) {
+        this.onErr(e);
+      }
+      return;
+    }
+
     try {
       const room = this.room();
       if (!room) throw "invalid state";
@@ -383,6 +580,19 @@ class Voice {
       this.toggleDeafen(true);
       return;
     }
+
+    if (this.isNative) {
+      try {
+        const micOn = !this.#settings.micOn;
+        await androidNative.voice.setMicrophone(micOn);
+        this.#settings.micOn = micOn;
+        this.sound.playSound(micOn ? "unmute" : "mute");
+      } catch (e) {
+        this.onErr(e);
+      }
+      return;
+    }
+
     try {
       const room = this.room();
       if (!room) throw "invalid state";
@@ -403,6 +613,17 @@ class Voice {
   }
 
   async toggleCamera() {
+    if (this.isNative) {
+      try {
+        const enabled = !this.video();
+        await androidNative.voice.setCamera(enabled);
+        this.#setVideo(enabled);
+      } catch (e) {
+        this.onErr(e);
+      }
+      return;
+    }
+
     try {
       const room = this.room();
       if (!room) throw "invalid state";
@@ -481,6 +702,18 @@ class Voice {
   }
 
   async toggleScreenshare() {
+    if (this.isNative) {
+      try {
+        const enabled = !this.screenshare();
+        await androidNative.voice.setScreenShare(enabled);
+        this.#setScreenshare(enabled);
+        if (!enabled) this.sound.playSound("streamEnd");
+      } catch (e) {
+        this.onErr(e);
+      }
+      return;
+    }
+
     const room = this.room();
     if (!room) throw "invalid state";
 
@@ -700,7 +933,10 @@ class Voice {
   }
 
   get screenShareSupported() {
-    return typeof navigator.mediaDevices?.getDisplayMedia === "function";
+    return (
+      this.isNative ||
+      typeof navigator.mediaDevices?.getDisplayMedia === "function"
+    );
   }
 
   private onErr(e: unknown) {
@@ -719,7 +955,8 @@ export function VoiceContext(props: { children: JSX.Element }) {
   const modals = useModals();
   const sound = useSound();
   const device = useDevice();
-  const voice = new Voice(state.voice, modals, sound, device);
+  const client = useClient();
+  const voice = new Voice(state.voice, modals, sound, device, client);
 
   return (
     <voiceContext.Provider value={voice}>

@@ -197,7 +197,11 @@ export function AppUpsell() {
     createSignal(false);
 
   const [upsell, setUpsell] = createSignal<Upsell>(
-    !isStoat ? "none" : window.native ? "android" : "desktop",
+    !isStoat || window.native?.platform === "android"
+      ? "none"
+      : window.native
+        ? "android"
+        : "desktop",
   );
 
   // decided outside JSX, as Solid wraps JSX conditions in a way that stops

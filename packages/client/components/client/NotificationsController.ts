@@ -7,6 +7,25 @@ import { useState } from "@revolt/state";
 import { useSnackbar } from "@revolt/ui";
 
 import { IS_DEV, useClient } from ".";
+import { androidNative, isAndroidShell } from "../native/android";
+
+let unsubscribeFcmToken: (() => void) | undefined;
+
+async function registerFcmToken(client: Client, token?: string | null) {
+  if (IS_DEV) {
+    console.log("Skipping FCM registration in dev.");
+    return;
+  }
+
+  token ??= await androidNative.fcm.getToken();
+  if (!token) throw "No FCM token available";
+
+  await client.api.post("/push/subscribe", {
+    endpoint: "fcm",
+    p256dh: "",
+    auth: token,
+  });
+}
 
 export function useNotifications() {
   const { settings } = useState();
@@ -15,7 +34,8 @@ export function useNotifications() {
   const snackbar = useSnackbar();
   const { showError } = useModals();
 
-  const supportsNotification = "Notification" in window;
+  const isAndroid = isAndroidShell();
+  const supportsNotification = !isAndroid && "Notification" in window;
 
   const onDeny = async (showModal?: boolean) => {
     settings.resetNotificationsState("denied");
@@ -39,6 +59,24 @@ export function useNotifications() {
   };
 
   const initNotifications = async () => {
+    if (isAndroid) {
+      settings.desktopNotificationsState = "unsupported";
+
+      unsubscribeFcmToken?.();
+      unsubscribeFcmToken = androidNative.fcm.onToken((token) => {
+        if (settings.pushNotificationsState !== "allowed") return;
+        registerFcmToken(getClient(), token).catch(console.error);
+      });
+
+      if (
+        settings.pushNotificationsState === "default" ||
+        settings.pushNotificationsState === "allowed"
+      ) {
+        await togglePushPermission(false, true);
+      }
+      return;
+    }
+
     if (
       settings.desktopNotificationsState === "default" ||
       notificationStateMismatch()
@@ -97,7 +135,11 @@ export function useNotifications() {
   const enablePushSubscription = async () => {
     settings.pushNotificationsState = "allowed";
     try {
-      await setUpServiceWorkerSubscription(getClient());
+      if (isAndroid) {
+        await registerFcmToken(getClient());
+      } else {
+        await setUpServiceWorkerSubscription(getClient());
+      }
     } catch (e) {
       console.error(e);
       snackbar.show({
@@ -107,7 +149,24 @@ export function useNotifications() {
     }
   };
 
-  const togglePushPermission = async (modalOnDeny?: boolean) => {
+  const togglePushPermission = async (
+    modalOnDeny?: boolean,
+    refresh?: boolean,
+  ) => {
+    if (isAndroid) {
+      if (settings.pushNotificationsState !== "allowed" || refresh) {
+        if (await androidNative.notifications.requestPermission()) {
+          await enablePushSubscription();
+        } else {
+          await onDeny(modalOnDeny);
+        }
+      } else {
+        settings.pushNotificationsState = "denied";
+        await killServiceWorkerSubscription(getClient());
+      }
+      return;
+    }
+
     if (settings.pushNotificationsState !== "allowed") {
       if (supportsNotification) {
         if ((await Notification.requestPermission()) === "granted") {
@@ -215,6 +274,11 @@ export async function killServiceWorkerSubscription(
 ) {
   if (IS_DEV) {
     console.log("Skipping killing push worker in dev.");
+    return;
+  }
+
+  if (isAndroidShell()) {
+    if (!loggingOut) await client.api.post("/push/unsubscribe");
     return;
   }
 

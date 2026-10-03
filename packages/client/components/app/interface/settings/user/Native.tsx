@@ -21,6 +21,9 @@ declare type DesktopConfig = {
 declare global {
   interface Window {
     native: {
+      /** Set by the Android WebView shell; absent on Electron */
+      platform?: "android";
+      android?: import("../../../../native/android").AndroidBridge;
       versions: {
         node(): string;
         chrome(): string;
