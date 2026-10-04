@@ -15,6 +15,7 @@ import { styled } from "styled-system/jsx";
 import { UserContextMenu } from "@revolt/app";
 import { useUser } from "@revolt/markdown/users";
 import { useVoice } from "@revolt/rtc";
+import { VideoZoomSurface } from "@revolt/rtc/components/VideoZoomSurface";
 import { useState } from "@revolt/state";
 import { Avatar } from "@revolt/ui/components/design";
 import { Row } from "@revolt/ui/components/layout";
@@ -125,24 +126,27 @@ export function ParticipantTile(props: TileProps) {
             </AvatarOnly>
           }
         >
-          <VideoTrack
-            style={{
-              "grid-area": "1/1",
-              "object-fit": "contain",
-              width: "100%",
-              height: "100%",
-              overflow: "hidden",
-            }}
-            trackRef={track as TrackReference}
-            manageSubscription={true}
-            ref={videoRef}
-            on:resize={() => {
-              setVideoDims({
-                height: videoRef?.videoHeight || 0,
-                width: videoRef?.videoWidth || 0,
-              });
-            }}
-          />
+          <VideoZoomSurface
+            style={{ "grid-area": "1/1", width: "100%", height: "100%" }}
+          >
+            <VideoTrack
+              style={{
+                "object-fit": "contain",
+                width: "100%",
+                height: "100%",
+                overflow: "hidden",
+              }}
+              trackRef={track as TrackReference}
+              manageSubscription={true}
+              ref={videoRef}
+              on:resize={() => {
+                setVideoDims({
+                  height: videoRef?.videoHeight || 0,
+                  width: videoRef?.videoWidth || 0,
+                });
+              }}
+            />
+          </VideoZoomSurface>
         </Show>
         <Overlay showOnHover={isScreenShare()}>
           <OverlayInner>

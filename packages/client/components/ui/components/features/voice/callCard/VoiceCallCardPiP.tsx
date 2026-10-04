@@ -34,7 +34,7 @@ export function VoiceCallCardPiP() {
           <BrowserPiP />
         }
       >
-        <AndroidNativeParticipants focusedOnly />
+        <AndroidNativeParticipants focusedOnly compact />
       </Show>
       <VoiceCallCardActions size="xs" />
     </MiniCard>

@@ -9,6 +9,7 @@ import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { VoiceStatefulUserIcons } from "@revolt/ui/components/features/voice/VoiceStatefulUserIcons";
 import { NativeVoiceParticipant } from "../../native/android";
 import { tile } from "@revolt/ui/components/features/voice/callCard/ParticipantTile";
+import { VideoZoomSurface } from "./VideoZoomSurface";
 
 function isScreenShare(source: string) {
   return source.replaceAll("_", "") === "screenshare";
@@ -17,10 +18,32 @@ function isScreenShare(source: string) {
 export function AndroidNativeParticipants(props: {
   focusedOnly?: boolean;
   excludeFocused?: boolean;
+  compact?: boolean;
 }) {
   const voice = useVoice();
+  const participants = createMemo(() => {
+    const participantsByIdentity = new Map<string, NativeVoiceParticipant>();
+    for (const participant of voice.channel()?.voiceParticipants.values() ?? []) {
+      participantsByIdentity.set(participant.userId, {
+          identity: participant.userId,
+          sid: participant.userId,
+          name: "",
+          speaking: false,
+          microphoneEnabled: participant.isPublishing(),
+          cameraEnabled: participant.isCamera(),
+          screenShareEnabled: participant.isScreensharing(),
+          tracks: participant.isScreensharing()
+            ? [{ sid: "", source: "screen_share", kind: "video", muted: false, subscribed: true }]
+            : [],
+        });
+    }
+    for (const participant of voice.androidParticipants()) {
+      participantsByIdentity.set(participant.identity, participant);
+    }
+    return [...participantsByIdentity.values()];
+  });
   const tiles = createMemo(() =>
-    voice.androidParticipants().flatMap((participant) => {
+    participants().flatMap((participant) => {
       const camera = participant.tracks.find((track) => track.source === "camera");
       const screenShares = participant.tracks.filter((track) =>
         isScreenShare(track.source),
@@ -34,8 +57,10 @@ export function AndroidNativeParticipants(props: {
         })),
       ];
     }).filter((entry, index, entries) => {
-      const focusedSid = voice.focusId() ?? entries[0]?.sid;
-      const focused = entry.sid !== undefined && entry.sid === focusedSid;
+      const focusId = voice.focusId();
+      const focused = focusId
+        ? entry.sid === focusId
+        : index === 0;
       return props.focusedOnly ? focused : !props.excludeFocused || !focused;
     }),
   );
@@ -47,6 +72,7 @@ export function AndroidNativeParticipants(props: {
           participant={entry.participant}
           sid={entry.sid}
           source={entry.source}
+          compact={props.compact}
         />
       )}
     </For>
@@ -57,6 +83,7 @@ function AndroidNativeParticipantTile(props: {
   participant: NativeVoiceParticipant;
   sid?: string;
   source: string;
+  compact?: boolean;
 }) {
   const voice = useVoice();
   const user = useUser(props.participant.identity);
@@ -92,6 +119,19 @@ function AndroidNativeParticipantTile(props: {
           }) +
           " vc_tile"
         }
+        style={{
+          "outline-color": "var(--md-sys-color-outline-variant)",
+          ...(props.compact
+            ? {
+                width: "100%",
+                height: "100%",
+                "max-width": "100%",
+                "max-height": "100%",
+                "aspect-ratio": "auto",
+                flex: "1 1 auto",
+              }
+            : {}),
+        }}
         onClick={() => props.sid && voice.toggleNativeFocus(props.sid)}
       >
         <Show when={hasVideo()} fallback={
@@ -111,16 +151,23 @@ function AndroidNativeParticipantTile(props: {
             />
           </div>
         }>
-          <img
-            src={frame()}
-            alt=""
+          <VideoZoomSurface
             style={{
               "grid-area": "1/1",
               width: "100%",
               height: "100%",
-              "object-fit": "contain",
             }}
-          />
+          >
+            <img
+              src={frame()}
+              alt=""
+              style={{
+                width: "100%",
+                height: "100%",
+                "object-fit": "contain",
+              }}
+            />
+          </VideoZoomSurface>
         </Show>
         <div
           style={{

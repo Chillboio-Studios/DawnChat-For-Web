@@ -431,6 +431,11 @@ class Voice {
     this.androidVoiceUnsubscribers.push(
       android.on("voice.state", (payload) => {
         const state = payload as NativeVoiceState;
+        console.debug("[rtc] native voice state", {
+          state: state.state,
+          participants: state.participants?.length ?? 0,
+          localTracks: state.localTracks?.map((track) => track.source),
+        });
         if (state.state === "disconnected") {
           console.error("[rtc] native LiveKit disconnected", {
             reason: state.reason,
@@ -847,11 +852,46 @@ class Voice {
       if (this.screenShareStopGuard) return;
       this.screenShareStopGuard = true;
       try {
-        const enabled = !this.screenshare();
-        const started = await window.native.android?.voice?.setScreenShareEnabled(enabled);
-        if (started) {
-          this.#setScreenshare(enabled);
-          this.sound.playSound(enabled ? "streamStart" : "streamEnd");
+        if (this.screenshare()) {
+          const stopped = await window.native.android?.voice?.setScreenShareEnabled(false);
+          if (stopped) {
+            this.#setScreenshare(false);
+            this.sound.playSound("streamEnd");
+          }
+          return;
+        }
+
+        const qualities = this.getEnabledScreenShareQualities();
+        const startNativeShare = async (qualityName: ScreenShareQualityName) => {
+          const started = await window.native.android?.voice?.setScreenShareEnabled(
+            true,
+            qualityName,
+          );
+          if (started) {
+            this.#setScreenshare(true);
+            this.sound.playSound("streamStart");
+          }
+        };
+
+        if (this.#settings.screenShareQualityAsk && Object.keys(qualities).length > 1) {
+          this.openModal({
+            type: "screen_share_settings",
+            native: true,
+            qualities: Object.keys(qualities).map((key) => ({
+              name: key,
+              fullName: qualities[key as ScreenShareQualityName]!.fullName,
+            })),
+            audio: false,
+            onCancel: () => {},
+            callback: (qualityName) => {
+              void startNativeShare(qualityName).catch((error) => this.onErr(error));
+            },
+          });
+        } else {
+          const configuredQuality = this.#settings.screenShareQuality;
+          const quality = configuredQuality && qualities[configuredQuality] ?
+            configuredQuality : "low";
+          await startNativeShare(quality);
         }
       } catch (error) {
         this.onErr(error);

@@ -44,7 +44,7 @@ export function ScreenShareSettingsModal(
 
   return (
     <Dialog
-      minWidth={420}
+      minWidth={props.native ? 0 : 420}
       show={props.show}
       onClose={() => {
         props.onCancel();
@@ -62,15 +62,17 @@ export function ScreenShareSettingsModal(
         },
       ]}
     >
-      <VideoTrack
-        trackRef={props.trackReference}
-        style={{
-          padding: "var(--gap-md)",
-          "border-radius": "var(--borderRadius-lg)",
-          "max-height": "400px",
-          "justify-self": "center",
-        }}
-      />
+      <Show when={props.trackReference}>
+        <VideoTrack
+          trackRef={props.trackReference!}
+          style={{
+            padding: "var(--gap-md)",
+            "border-radius": "var(--borderRadius-lg)",
+            "max-height": "400px",
+            "justify-self": "center",
+          }}
+        />
+      </Show>
       <form onSubmit={submit}>
         <Column>
           <Form2.ButtonGroup
@@ -90,7 +92,7 @@ export function ScreenShareSettingsModal(
           <Form2.Checkbox control={group.controls.dontAsk}>
             <Trans>Don't ask me again</Trans>
           </Form2.Checkbox>
-          <Show when={!props.audio}>
+          <Show when={!props.native && !props.audio}>
             <small>
               <Trans>Audio disabled by browser</Trans>
             </small>

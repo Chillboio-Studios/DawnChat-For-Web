@@ -13,7 +13,10 @@ export type AndroidBridge = {
     setDeafened(enabled: boolean): Promise<boolean>;
     setOutputVolume(volume: number): Promise<boolean>;
     setOutputRoute(route: string): Promise<boolean>;
-    setScreenShareEnabled(enabled: boolean): Promise<boolean>;
+    setScreenShareEnabled(
+      enabled: boolean,
+      quality?: ScreenShareQualityName,
+    ): Promise<boolean>;
   };
   startScreenShare?(options?: { audio?: boolean }): Promise<boolean>;
   stopScreenShare?(): Promise<boolean>;
@@ -47,6 +50,8 @@ export type NativeVoiceState = {
   participants?: NativeVoiceParticipant[];
   speakers?: string[];
 };
+
+export type ScreenShareQualityName = "low" | "high" | "text";
 
 export function isAndroidShell(): boolean {
   return window.native?.platform === "android" && !!window.native.android;
