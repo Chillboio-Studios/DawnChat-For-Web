@@ -56,6 +56,15 @@ export function VoiceCallCardContext(props: { children: JSX.Element }) {
     ofsY = 0;
 
   function mouseDown(e: PointerEvent) {
+    if (
+      e.target instanceof Element &&
+      e.target.closest(
+        'button, a, input, [role="button"], [data-no-call-drag], .vc_tile, .vc_actions, mdui-button, mdui-icon-button',
+      )
+    ) {
+      return;
+    }
+
     pid = e.pointerId;
     if (mode() === "floating") {
       const pos = ref!.getBoundingClientRect();
@@ -110,8 +119,10 @@ export function VoiceCallCardContext(props: { children: JSX.Element }) {
     //Set mode based on state
     if (voice.layout() === "fullscreen") {
       sty.transform = ``;
-      sty.width = `100%`;
-      sty.height = "";
+      sty.width = "100vw";
+      sty.height = "100dvh";
+      sty.top = "0";
+      sty.left = "0";
       setMode();
     } else if (
       voice.layout() === "expanded" &&
@@ -141,7 +152,7 @@ export function VoiceCallCardContext(props: { children: JSX.Element }) {
   function setFloat(float: FloatType) {
     const sty = ref!.style,
       x = float[1] === "l" ? PAD_X : `calc(100vw - var(--flt-w) - ${PAD_X})`,
-      y = float[0] === "t" ? PAD_Y : `calc(100vh - var(--flt-h) - ${PAD_Y})`;
+      y = float[0] === "t" ? PAD_Y : `calc(100dvh - var(--flt-h) - ${PAD_Y})`;
     sty.transform = `translate(${x}, ${y})`;
     sty.width = "";
     sty.height = "";
@@ -156,23 +167,6 @@ export function VoiceCallCardContext(props: { children: JSX.Element }) {
       ?.addEventListener("fullscreenchange", () => {
         if (!document.fullscreenElement) voice.resetLayout();
       });
-  });
-
-  createEffect(() => {
-    if (voice.layout() === "fullscreen" && inCall()) {
-      if (
-        !document
-          .getElementById("floating")
-          ?.isSameNode(document.fullscreenElement)
-      ) {
-        if (document.fullscreenElement) {
-          document.exitFullscreen();
-        }
-        document.getElementById("floating")?.requestFullscreen();
-      }
-    } else if (document.fullscreenElement) {
-      document.exitFullscreen();
-    }
   });
 
   return (
@@ -211,7 +205,7 @@ const Float = styled("div", {
     pointerEvents: "none",
     transition: "all .3s cubic-bezier(1, 0, 0, 1)",
     height: "40vh",
-    touchAction: "none",
+    touchAction: "auto",
   },
   variants: {
     mode: {
@@ -224,7 +218,7 @@ const Float = styled("div", {
     fullscreen: {
       true: {
         zIndex: 100,
-        height: "100vh",
+        height: "100dvh",
         top: 0,
         // Width is set by floating logic in effect above
       },
@@ -235,7 +229,11 @@ const Float = styled("div", {
       mode: ["floating", "moving"],
       css: {
         "--flt-w": "300px",
-        "--flt-h": "170px",
+        "--flt-h": "min(170px, calc(100dvh - 96px))",
+        "@media (max-width: 640px)": {
+          "--flt-w": "min(300px, calc(100vw - 24px))",
+          "--flt-h": "min(190px, calc(100dvh - 96px))",
+        },
         width: "var(--flt-w)",
         height: "var(--flt-h)",
       },

@@ -11,7 +11,10 @@ import { Button, IconButton } from "@revolt/ui/components/design";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { useMediaDeviceSelect } from "solid-livekit-components";
 
-export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
+export function VoiceCallCardActions(props: {
+  size: "xs" | "sm";
+  class?: string;
+}) {
   const voice = useVoice();
   const state = useState();
   const navigate = useNavigate();
@@ -43,7 +46,7 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
   };
 
   return (
-    <Actions>
+    <Actions class={props.class}>
       <Show when={props.size === "xs"}>
         <IconButton
           variant="standard"
@@ -221,8 +224,15 @@ const Actions = styled("div", {
     width: "fit-content",
     justifyContent: "center",
     alignSelf: "center",
+    whiteSpace: "nowrap",
 
     borderRadius: "var(--borderRadius-full)",
     background: "var(--md-sys-color-surface-container)",
+
+    "@media (max-width: 640px)": {
+      gap: "var(--gap-sm)",
+      minWidth: "max-content",
+      marginInline: "auto",
+    },
   },
 });

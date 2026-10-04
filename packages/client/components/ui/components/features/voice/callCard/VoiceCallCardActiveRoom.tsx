@@ -5,11 +5,7 @@ import { TrackLoop } from "solid-livekit-components";
 import { styled } from "styled-system/jsx";
 
 import { useDevice } from "@revolt/common";
-import {
-  AndroidNativeParticipants,
-  InRoom,
-  useVoice,
-} from "@revolt/rtc";
+import { AndroidNativeParticipants, InRoom, useVoice } from "@revolt/rtc";
 import { IconButton } from "@revolt/ui/components/design";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { scrollableStyles } from "@revolt/ui/directives";
@@ -29,11 +25,11 @@ export function VoiceCallCardActiveRoom() {
     <View collapsed={collapsed()}>
       <Participants />
       <VoiceCallControls>
-        <VoiceCallControlHolder left collapsed={collapsed()}>
+        <VoiceCallControlHolder class="vc_status" left collapsed={collapsed()}>
           <VoiceCallCardStatus />
         </VoiceCallControlHolder>
-        <VoiceCallCardActions size="sm" />
-        <VoiceCallControlHolder right collapsed={collapsed()}>
+        <VoiceCallCardActions size="sm" class="vc_actions" />
+        <VoiceCallControlHolder class="vc_layout" right collapsed={collapsed()}>
           <LayoutButtons />
         </VoiceCallControlHolder>
       </VoiceCallControls>
@@ -88,7 +84,25 @@ function LayoutButtons() {
       <IconButton
         size="sm"
         variant={"standard"}
-        onPress={() => voice.toggleLayout("fullscreen")}
+        onPress={() => {
+          if (voice.layout() === "fullscreen") {
+            voice.toggleLayout("fullscreen");
+            if (document.fullscreenElement) {
+              void document.exitFullscreen().catch((error: unknown) => {
+                console.debug("Could not exit browser fullscreen", error);
+              });
+            }
+            return;
+          }
+
+          const fullscreenRequest = document
+            .getElementById("floating")
+            ?.requestFullscreen();
+          voice.toggleLayout("fullscreen");
+          void fullscreenRequest?.catch((error: unknown) => {
+            console.debug("Browser fullscreen is unavailable", error);
+          });
+        }}
       >
         <Show
           when={voice.layout() === "fullscreen"}
@@ -101,8 +115,7 @@ function LayoutButtons() {
   );
 }
 
-const TILE_MIN_WIDTH = "250px",
-  TILE_MIN_FOCUS_HEIGHT = "100px";
+const TILE_MIN_WIDTH = "250px";
 
 /**
  * Show a grid of participants
@@ -116,26 +129,32 @@ function Participants() {
 
   let callRef: HTMLDivElement | undefined;
 
-  const tileWidth = () => {
-    const nativeTrackCount = voice.androidParticipants().reduce(
-      (count, participant) =>
-        count +
-        1 +
-        participant.tracks.filter(
-          (track) => track.source.replaceAll("_", "") === "screenshare",
-        ).length,
-      0,
-    );
-    const trackCount = voice.isAndroidNativeActive
+  const trackCount = () => {
+    const nativeTrackCount = voice
+      .androidParticipants()
+      .reduce(
+        (count, participant) =>
+          count +
+          1 +
+          participant.tracks.filter(
+            (track) => track.source.replaceAll("_", "") === "screenshare",
+          ).length,
+        0,
+      );
+    return voice.isAndroidNativeActive
       ? nativeTrackCount
       : voice.vidTracks().length + testTrackCount;
-    const vidWidth = Math.round(100 / Math.max(1, trackCount));
-    return `max(${TILE_MIN_WIDTH}, ${vidWidth}% - var(--gap-md))`;
+  };
+
+  const tileWidth = () => {
+    const vidWidth = Math.round(100 / Math.max(1, trackCount()));
+    return `max(var(--vc-tile-min-width, ${TILE_MIN_WIDTH}), calc(${vidWidth}% - var(--gap-md)))`;
   };
 
   // Clear out any focus when the track that was focused is no longer available.
   createEffect(() => {
-    if (!voice.isAndroidNativeActive && !voice.focusTrack()) voice.toggleFocus();
+    if (!voice.isAndroidNativeActive && !voice.focusTrack())
+      voice.toggleFocus();
   });
 
   onMount(() => {
@@ -150,7 +169,6 @@ function Participants() {
   return (
     <Call ref={callRef} class={voice.focusId() ? "" : scrollableStyles()}>
       <InRoom>
-        <FocusedParticipant />
         <Show when={voice.focusId()}>
           <ShowBarButtonHolder>
             <div style={{ "margin-bottom": "10px" }}>
@@ -176,22 +194,25 @@ function Participants() {
           </ShowBarButtonHolder>
         </Show>
         <Grid
-          focus={!!voice.focusId()}
+          focusedStage={!!voice.focusId()}
+          fullscreen={voice.layout() === "fullscreen"}
           show={voice.showBar()}
+          unfocused={!voice.focusId()}
           class={voice.focusId() ? scrollableStyles({ direction: "x" }) : ""}
-          style={{ "--vc-tile-width": tileWidth() }}
+          style={{
+            "--vc-tile-width": tileWidth(),
+            "--vc-thumbnail-count": Math.max(1, trackCount() - 1),
+          }}
         >
           <Show
             when={voice.isAndroidNativeActive}
             fallback={
-              <TrackLoop
-                tracks={() => voice.vidTracks().filter((t) => !voice.isFocus(t))}
-              >
+              <TrackLoop tracks={() => voice.vidTracks()}>
                 {() => <ParticipantTile />}
               </TrackLoop>
             }
           >
-            <AndroidNativeParticipants excludeFocused={!!voice.focusId()} />
+            <AndroidNativeParticipants />
           </Show>
           <For each={Array(testTrackCount)}>
             {() => (
@@ -209,37 +230,11 @@ function Participants() {
   );
 }
 
-function FocusedParticipant() {
-  const voice = useVoice();
-
-  return (
-    <Show when={voice.isAndroidNativeActive ? voice.focusId() : voice.focusTrack()}>
-      <Show
-        when={voice.isAndroidNativeActive}
-        fallback={
-          <TrackLoop tracks={() => [voice.focusTrack()!] }>
-            {() => (
-              <FocusBox>
-                <ParticipantTile focus />
-              </FocusBox>
-            )}
-          </TrackLoop>
-        }
-      >
-        <FocusBox>
-          <AndroidNativeParticipants focusedOnly />
-        </FocusBox>
-      </Show>
-    </Show>
-  );
-}
-
 const View = styled("div", {
   base: {
     minHeight: 0,
     height: "100%",
     width: "100%",
-
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
@@ -248,17 +243,55 @@ const View = styled("div", {
     transition: "padding var(--transitions-medium)",
   },
   variants: {
+    fullscreen: {
+      true: {
+        padding:
+          "max(var(--gap-sm), env(safe-area-inset-top)) max(var(--gap-sm), env(safe-area-inset-right)) max(var(--gap-sm), env(safe-area-inset-bottom)) max(var(--gap-sm), env(safe-area-inset-left))",
+        gap: "var(--gap-sm)",
+      },
+    },
     collapsed: {
       true: { padding: 0 },
     },
   },
 });
-
 const VoiceCallControls = styled("div", {
   base: {
     display: "flex",
+    alignItems: "center",
     flexShrink: 0,
-    overflow: "hidden",
+    minWidth: 0,
+    overflow: "visible",
+
+    "@media (max-width: 640px)": {
+      display: "grid",
+      gridTemplateColumns: "minmax(0, 1fr) auto",
+      gridTemplateAreas: '"status layout" "actions actions"',
+      gap: "var(--gap-xs) var(--gap-sm)",
+
+      "& .vc_status": {
+        gridArea: "status",
+        minWidth: 0,
+        padding: "var(--gap-xs)",
+      },
+      "& .vc_layout": {
+        gridArea: "layout",
+        padding: "var(--gap-xs)",
+      },
+      "& .vc_actions": {
+        gridArea: "actions",
+        justifySelf: "center",
+        width: "100%",
+        maxWidth: "100%",
+        overflowX: "auto",
+        justifyContent: "safe center",
+        padding: "var(--gap-xs)",
+        scrollbarWidth: "none",
+      },
+      "& .vc_actions::-webkit-scrollbar": {
+        display: "none",
+      },
+    },
   },
 });
 
@@ -295,11 +328,21 @@ const VoiceCallControlHolder = styled("div", {
 
 const ShowBarButtonHolder = styled("div", {
   base: {
-    height: 0,
-    alignSelf: "center",
+    position: "absolute",
+    zIndex: 4,
+    top: "var(--gap-xs)",
+    left: "50%",
+    transform: "translateX(-50%)",
+    height: "auto",
+    pointerEvents: "none",
     overflow: "visible",
     display: "flex",
-    flexDirection: "column-reverse",
+    justifyContent: "center",
+
+    "& > div": {
+      pointerEvents: "auto",
+      marginBottom: 0,
+    },
   },
 });
 
@@ -320,21 +363,104 @@ const Grid = styled("div", {
     flexWrap: "wrap",
     justifyContent: "safe center",
     alignContent: "safe center",
-    minHeight: "100%",
+    minHeight: 0,
+    flex: "1 1 auto",
     gap: "var(--gap-md)",
+
+    "@media (max-width: 640px)": {
+      "--vc-tile-min-width": "min(42vw, 180px)",
+      justifyContent: "flex-start",
+      alignContent: "flex-start",
+      gap: "var(--gap-sm)",
+      padding: "var(--gap-xs)",
+    },
   },
 
   variants: {
-    focus: {
+    focusedStage: {
       true: {
-        flexDirection: "column",
-        height: `max(20%, ${TILE_MIN_FOCUS_HEIGHT})`,
-        minHeight: 0,
-        transition: "height .3s ease",
+        display: "grid",
+        gridTemplateColumns:
+          "repeat(var(--vc-thumbnail-count), minmax(0, 1fr))",
+        gridTemplateRows: "minmax(0, 1fr) clamp(96px, 18vh, 180px)",
+        alignContent: "stretch",
+        justifyContent: "safe center",
+        overflowX: "auto",
+        overflowY: "hidden",
+        gap: "var(--gap-sm)",
+        padding: "var(--gap-xs)",
+
+        '& .vc_tile[data-focused="true"]': {
+          gridColumn: "1 / -1",
+          gridRow: "1",
+          alignSelf: "stretch",
+          justifySelf: "stretch",
+          width: "auto",
+          minWidth: 0,
+          maxWidth: "none",
+          height: "100%",
+          minHeight: 0,
+          aspectRatio: "auto",
+        },
+        '& .vc_tile:not([data-focused="true"])': {
+          gridRow: "2",
+          width: "100%",
+          minWidth: 0,
+          maxWidth: "min(28vw, 240px)",
+          height: "100%",
+          aspectRatio: "auto",
+          flex: "1 1 auto",
+        },
+        "& .vc_tile:only-child": {
+          gridColumn: "1 / -1",
+          gridRow: "1",
+          height: "100%",
+        },
+        "@media (max-width: 640px)": {
+          gridTemplateColumns:
+            "repeat(var(--vc-thumbnail-count), minmax(0, 1fr))",
+          gridTemplateRows: "minmax(0, 1fr) clamp(88px, 14vh, 120px)",
+          gap: "var(--gap-xs)",
+          padding: "var(--gap-xs)",
+          '& .vc_tile:not([data-focused="true"])': {
+            maxWidth: "min(44vw, 180px)",
+          },
+        },
+      },
+    },
+    fullscreen: {
+      true: {
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 400px), 1fr))",
+        gridAutoRows: "auto",
+        flex: "1 1 auto",
+        alignContent: "center",
+        justifyContent: "stretch",
+        justifyItems: "center",
+        gap: "var(--gap-lg)",
+        overflowX: "hidden",
+        overflowY: "auto",
+        padding: "var(--gap-md)",
 
         "& .vc_tile": {
-          width: "auto",
-          height: "100%",
+          width: "100%",
+          minWidth: 0,
+          maxWidth: "100%",
+          height: "auto",
+          aspectRatio: "16/9",
+          alignSelf: "center",
+        },
+        "& .vc_tile:only-child": {
+          width: "min(100%, 1200px)",
+          maxHeight: "min(76vh, 900px)",
+        },
+        "@media (max-width: 640px)": {
+          gap: "var(--gap-md)",
+          padding: "var(--gap-xs)",
+
+          "& .vc_tile:only-child": {
+            height: "min(65dvh, 640px)",
+            aspectRatio: "auto",
+          },
         },
       },
     },
@@ -343,16 +469,107 @@ const Grid = styled("div", {
         height: 0,
       },
     },
+    unfocused: {
+      true: {},
+    },
   },
-});
-
-const FocusBox = styled("div", {
-  base: {
-    height: 0,
-    flexGrow: 1,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    margin: "0 auto",
-  },
+  compoundVariants: [
+    {
+      unfocused: true,
+      fullscreen: true,
+      css: {
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+        alignContent: "center",
+        justifyItems: "center",
+        "& .vc_tile": {
+          width: "min(100%, 560px)",
+          maxWidth: "560px",
+          maxHeight: "76dvh",
+        },
+        "@media (orientation: landscape)": {
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "nowrap",
+          justifyContent: "safe center",
+          alignItems: "center",
+          overflowX: "auto",
+          overflowY: "hidden",
+          "& .vc_tile": {
+            flex: "0 0 min(28vw, 320px)",
+            width: "min(28vw, 320px)",
+          },
+        },
+        "@media (min-width: 1025px) and (orientation: landscape)": {
+          '& .vc_tile:not([data-focused="true"])': {
+            flex: "0 0 min(32vw, 380px)",
+            width: "min(32vw, 380px)",
+            maxWidth: "380px",
+          },
+        },
+        "@media (max-width: 640px) and (orientation: portrait)": {
+          gridTemplateColumns: "minmax(0, 1fr)",
+          "& .vc_tile": {
+            width: "100%",
+            maxWidth: "min(100%, 420px)",
+            maxHeight: "none",
+          },
+        },
+        "@media (max-width: 640px) and (orientation: landscape)": {
+          '& .vc_tile:not([data-focused="true"])': {
+            flex: "0 0 min(78vw, 320px)",
+            width: "min(78vw, 320px)",
+          },
+        },
+      },
+    },
+    {
+      focusedStage: true,
+      fullscreen: true,
+      css: {
+        gridTemplateColumns:
+          "repeat(var(--vc-thumbnail-count), minmax(0, 1fr))",
+      },
+    },
+    {
+      focusedStage: true,
+      fullscreen: false,
+      css: {
+        gridTemplateColumns:
+          "repeat(var(--vc-thumbnail-count), minmax(0, 1fr))",
+      },
+    },
+    {
+      focusedStage: true,
+      fullscreen: true,
+      css: {
+        "@media (max-height: 500px) and (orientation: landscape)": {
+          gridTemplateRows: "minmax(0, 1fr) clamp(64px, 20vh, 88px)",
+          gap: "var(--gap-xs)",
+          padding: "var(--gap-xs)",
+          '& .vc_tile[data-focused="true"]': {
+            height: "100%",
+            minHeight: 0,
+            aspectRatio: "auto",
+          },
+          '& .vc_tile:not([data-focused="true"])': {
+            height: "100%",
+            minHeight: 0,
+            aspectRatio: "auto",
+          },
+        },
+      },
+    },
+    {
+      focusedStage: true,
+      show: false,
+      css: {
+        gridTemplateRows: "minmax(0, 1fr) 0px",
+        overflow: "hidden",
+        '& .vc_tile:not([data-focused="true"])': {
+          display: "none",
+        },
+      },
+    },
+  ],
 });

@@ -1,4 +1,4 @@
-import { createSignal, Show } from "solid-js";
+import { createSignal, onMount, Show } from "solid-js";
 import {
   TrackReference,
   useEnsureParticipant,
@@ -8,11 +8,12 @@ import {
   VideoTrack,
 } from "solid-livekit-components";
 
-import { Track } from "livekit-client";
+import { RemoteTrackPublication, Track } from "livekit-client";
 import { cva } from "styled-system/css";
 import { styled } from "styled-system/jsx";
 
 import { UserContextMenu } from "@revolt/app";
+import { useDevice } from "@revolt/common";
 import { useUser } from "@revolt/markdown/users";
 import { useVoice } from "@revolt/rtc";
 import { VideoZoomSurface } from "@revolt/rtc/components/VideoZoomSurface";
@@ -24,16 +25,13 @@ import { Symbol } from "@revolt/ui/components/utils/Symbol";
 
 import { VoiceStatefulUserIcons } from "../VoiceStatefulUserIcons";
 
-type TileProps = {
-  focus?: boolean;
-};
-
 /**
  * Individual participant tile
  */
-export function ParticipantTile(props: TileProps) {
+export function ParticipantTile() {
   const voice = useVoice();
   const state = useState();
+  const device = useDevice();
   const participant = useEnsureParticipant();
   const track = useTrackRefContext();
   const user = useUser(participant.identity);
@@ -44,6 +42,7 @@ export function ParticipantTile(props: TileProps) {
     height: number;
     width: number;
   }>({ height: 0, width: 0 });
+  const [zoomed, setZoomed] = createSignal(false);
 
   const isMuted = useIsMuted({
     participant,
@@ -70,19 +69,26 @@ export function ParticipantTile(props: TileProps) {
     source: Track.Source.Camera,
   });
 
+  onMount(() => {
+    const publication = track.publication;
+    if (
+      publication instanceof RemoteTrackPublication &&
+      !publication.isSubscribed
+    ) {
+      void publication.setSubscribed(true);
+    }
+  });
+
   const isVideo = () => !isVideoMuted();
   const isScreenShare = () => track.source === Track.Source.ScreenShare;
+  const isFocused = () => voice.isFocus(track);
+  const isZoomedMobileDesktopShare = () =>
+    isScreenShare() &&
+    isFocused() &&
+    device.layout() !== "desktop" &&
+    videoDims().width > videoDims().height &&
+    zoomed();
   const isSpeaking = useIsSpeaking(participant);
-
-  const getHeight = () => {
-    if (!props.focus || videoDims().height == 0) return {};
-    // Calculate the aspect ratio
-    const ratio = videoDims().width / videoDims().height;
-
-    return ratio > 1
-      ? { height: `min(var(--vc-w) / ${ratio}, 100%)` }
-      : { height: "100%" };
-  };
 
   return (
     <Show when={!isScreenShare() || !isRemoteScreenShareMuted()}>
@@ -92,10 +98,23 @@ export function ParticipantTile(props: TileProps) {
             speaking: !isScreenShare() && isSpeaking(),
             video: isVideo() || isScreenShare(),
             fullscreen: voice.layout() === "fullscreen",
-            ...props,
+            focus: isFocused(),
           }) + (isScreenShare() ? " vc_tile group" : " vc_tile")
         }
-        onClick={() => voice.toggleFocus(track)}
+        data-focused={isFocused() ? "true" : undefined}
+        onClick={(event) => {
+          if (!isVideo() && !isScreenShare()) return;
+          if (zoomed()) return;
+          if (
+            event.target instanceof Element &&
+            event.target.closest(
+              '[aria-label="Zoom in"], [aria-label="Reset zoom"]',
+            )
+          ) {
+            return;
+          }
+          voice.toggleFocus(track);
+        }}
         use:floating={{
           // TODO: Conflicts with focusing, maybe only show if clicking name itself
           //   userCard: {
@@ -111,7 +130,19 @@ export function ParticipantTile(props: TileProps) {
             />
           ),
         }}
-        style={{ ...getHeight() }}
+        style={
+          isFocused()
+            ? {
+                "min-width": 0,
+                "max-width": "none",
+                width: "100%",
+                "grid-column": "1 / -1",
+                "grid-row": "1",
+                "align-self": "stretch",
+                "justify-self": "stretch",
+              }
+            : undefined
+        }
       >
         <Show
           when={isVideo() || isScreenShare()}
@@ -128,16 +159,19 @@ export function ParticipantTile(props: TileProps) {
         >
           <VideoZoomSurface
             style={{ "grid-area": "1/1", width: "100%", height: "100%" }}
+            onZoomChange={setZoomed}
+            preserveFrameOnResize={isZoomedMobileDesktopShare()}
           >
             <VideoTrack
               style={{
-                "object-fit": "contain",
+                "object-fit": isZoomedMobileDesktopShare()
+                  ? "cover"
+                  : "contain",
                 width: "100%",
                 height: "100%",
                 overflow: "hidden",
               }}
               trackRef={track as TrackReference}
-              manageSubscription={true}
               ref={videoRef}
               on:resize={() => {
                 setVideoDims({
