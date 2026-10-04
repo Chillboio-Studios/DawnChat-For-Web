@@ -499,10 +499,11 @@ class Voice {
     );
 
     try {
-      if (this.speakingPermission && this.#settings.micOn) {
-        const permissionGranted = await nativeVoice.requestMicrophonePermission();
-        if (!permissionGranted) this.#settings.micOn = false;
-      }
+      const callPermissions = await nativeVoice.requestCallPermissions({
+        microphone: this.speakingPermission && this.#settings.micOn,
+        camera: this.limits().video,
+      });
+      if (!callPermissions.microphone) this.#settings.micOn = false;
       const outputDeviceId = this.#settings.preferredAudioOutputDevice;
       const outputDeviceLabel = outputDeviceId
         ? (await navigator.mediaDevices.enumerateDevices().catch(() => []))
