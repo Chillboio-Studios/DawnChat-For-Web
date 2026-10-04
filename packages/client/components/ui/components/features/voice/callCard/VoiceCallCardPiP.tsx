@@ -14,7 +14,7 @@ import { Track } from "livekit-client";
 import { styled } from "styled-system/jsx";
 
 import { useUser } from "@revolt/markdown/users";
-import { useVoice } from "@revolt/rtc";
+import { AndroidNativeParticipants, useVoice } from "@revolt/rtc";
 import { Avatar } from "@revolt/ui/components/design";
 import { Row } from "@revolt/ui/components/layout";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
@@ -45,10 +45,17 @@ export function VoiceCallCardPiP() {
   return (
     <MiniCard>
       <VoiceCallCardStatus pip />
-      <Show when={!hasFocusVideo()} fallback={<MiniVideoTile />}>
-        <Row align justify grow wrap>
-          <TrackLoop tracks={audTracks}>{() => <ConnectedUser />}</TrackLoop>
-        </Row>
+      <Show
+        when={voice.isAndroidNativeActive}
+        fallback={
+          <Show when={!hasFocusVideo()} fallback={<MiniVideoTile />}>
+            <Row align justify grow wrap>
+              <TrackLoop tracks={audTracks}>{() => <ConnectedUser />}</TrackLoop>
+            </Row>
+          </Show>
+        }
+      >
+        <AndroidNativeParticipants focusedOnly />
       </Show>
       <VoiceCallCardActions size="xs" />
     </MiniCard>

@@ -5,6 +5,7 @@ import {
   createEffect,
   createSignal,
   JSX,
+  Show,
   Setter,
   untrack,
   useContext,
@@ -40,8 +41,13 @@ import {
 import { VoiceCallCardContext } from "@revolt/ui/components/features/voice/callCard/VoiceCallCard";
 
 import { Device, useDevice } from "@revolt/common";
-import { isAndroidShell } from "../native/android";
+import {
+  isAndroidShell,
+  NativeVoiceParticipant,
+  NativeVoiceState,
+} from "../native/android";
 import { InRoom } from "./components/InRoom";
+import { AndroidNativeAudioManager } from "./components/AndroidNativeMedia";
 import { RoomAudioManager } from "./components/RoomAudioManager";
 import { VoiceProcessor } from "./VoiceProcessor";
 
@@ -73,6 +79,8 @@ class Voice {
   #setRoom: Setter<Room | undefined>;
 
   vidTracks: Accessor<TrackReferenceOrPlaceholder[]>;
+  androidParticipants: Accessor<NativeVoiceParticipant[]>;
+  #setAndroidParticipants: Setter<NativeVoiceParticipant[]>;
 
   state: Accessor<State>;
   #setState: Setter<State>;
@@ -103,6 +111,8 @@ class Voice {
   private limits;
   private screenShareTracks: Set<string>;
   private screenShareStopGuard = false;
+  private androidNativeActive = false;
+  private androidVoiceUnsubscribers: Array<() => void> = [];
   private androidScreenShareTrack?: LocalVideoTrack;
   private androidScreenShareCleanup?: () => void;
   private voiceProcessor?: VoiceProcessor;
@@ -128,6 +138,12 @@ class Voice {
     this.#setRoom = setRoom;
 
     this.vidTracks = () => [];
+
+    const [androidParticipants, setAndroidParticipants] = createSignal<
+      NativeVoiceParticipant[]
+    >([]);
+    this.androidParticipants = androidParticipants;
+    this.#setAndroidParticipants = setAndroidParticipants;
 
     const [state, setState] = createSignal<State>("READY");
     this.state = state;
@@ -227,14 +243,50 @@ class Voice {
       setEchoCancellation(getSettings().echoCancellation ?? true);
       setAutoGainControl(getSettings().autoGainControl ?? true);
       setNoiseSuppression(getSettings().noiseSupression ?? "browser");
-      restartTrack();
+      if (this.androidNativeActive) {
+        void window.native?.android?.voice?.updateAudioSettings({
+          echoCancellation: getSettings().echoCancellation ?? true,
+          autoGainControl: getSettings().autoGainControl ?? true,
+          noiseSuppression: getSettings().noiseSupression !== "disabled",
+          inputVolume: getSettings().inputVolume,
+        });
+        void this.updateAndroidOutputRoute();
+      } else {
+        restartTrack();
+      }
     });
+  }
+
+  private async updateAndroidOutputRoute() {
+    const nativeVoice = window.native?.android?.voice;
+    if (!nativeVoice) return;
+    const deviceId = this.#settings.preferredAudioOutputDevice;
+    const deviceLabel = deviceId
+      ? (await navigator.mediaDevices.enumerateDevices().catch(() => []))
+          .find((device) => device.deviceId === deviceId)?.label
+      : undefined;
+    const label = deviceLabel?.toLowerCase() ?? "";
+    const route = label.includes("bluetooth")
+      ? "bluetooth"
+      : label.includes("earpiece")
+        ? "earpiece"
+        : label.includes("speaker")
+          ? "speaker"
+          : label.includes("wired") || label.includes("headset")
+            ? "wired"
+            : "default";
+    await nativeVoice.setOutputRoute(route);
   }
 
   async connect(channel: Channel, auth?: { url: string; token: string }) {
     this.disconnect();
 
     this.device.setWakeLocked();
+
+    if (isAndroidShell() && window.native.android?.voice) {
+      await this.connectAndroidVoice(channel, auth);
+      return;
+    }
 
     const room = new Room({
       audioCaptureDefaults: {
@@ -295,7 +347,16 @@ class Voice {
       this.sound.playSound("userJoinVoice");
     });
 
-    room.addListener("disconnected", () => this.#setState("DISCONNECTED"));
+    room.addListener("disconnected", (reason) => {
+      this.#setState("DISCONNECTED");
+      console.error("[rtc] LiveKit room disconnected", reason);
+      if (isAndroidShell() && window.native?.android) {
+        void this.stopAndroidScreenShare(room).finally(() => {
+          void window.native?.android?.stopScreenShare?.();
+          this.#setScreenshare(false);
+        });
+      }
+    });
 
     room.addListener("localTrackPublished", (pub) => {
       if (pub.audioTrack && pub.audioTrack.source === Track.Source.Microphone) {
@@ -349,8 +410,157 @@ class Voice {
     });
   }
 
+  private async connectAndroidVoice(
+    channel: Channel,
+    auth?: { url: string; token: string },
+  ) {
+    const android = window.native.android;
+    const nativeVoice = android?.voice;
+    if (!android || !nativeVoice) return;
+
+    batch(() => {
+      this.#setRoom(undefined);
+      this.#setChannel(channel);
+      this.#setState("CONNECTING");
+      this.#setVideo(false);
+      this.#setScreenshare(false);
+      this.#setAndroidParticipants([]);
+    });
+    this.androidNativeActive = true;
+
+    this.androidVoiceUnsubscribers.push(
+      android.on("voice.state", (payload) => {
+        const state = payload as NativeVoiceState;
+        const participants = [...(state.participants ?? [])];
+        if (state.localIdentity) {
+          const localTracks = state.localTracks ?? [];
+          participants.unshift({
+            identity: state.localIdentity,
+            sid: "local",
+            name: "",
+            speaking: state.speakers?.includes(state.localIdentity) ?? false,
+            microphoneEnabled: localTracks.some(
+              (track) => track.source === "microphone" && !track.muted,
+            ),
+            cameraEnabled: localTracks.some(
+              (track) => track.source === "camera" && !track.muted,
+            ),
+            screenShareEnabled: localTracks.some((track) =>
+              track.source.replaceAll("_", "") === "screenshare",
+            ),
+            tracks: localTracks,
+          });
+        }
+
+        batch(() => {
+          this.#setAndroidParticipants(participants);
+          this.#setState(
+            state.state === "connected"
+              ? "CONNECTED"
+              : state.state === "reconnecting"
+                ? "RECONNECTING"
+                : state.state === "connecting"
+                  ? "CONNECTING"
+                  : "DISCONNECTED",
+          );
+          this.#setVideo(
+            participants.some((participant) => participant.identity === state.localIdentity && participant.cameraEnabled),
+          );
+          this.#setScreenshare(
+            participants.some((participant) => participant.identity === state.localIdentity && participant.screenShareEnabled),
+          );
+        });
+        const localParticipant = participants.find(
+          (participant) => participant.identity === state.localIdentity,
+        );
+        if (localParticipant) {
+          this.#settings.micOn = localParticipant.microphoneEnabled;
+        }
+      }),
+      android.on("voice.error", (payload) => {
+        console.error("[rtc] native LiveKit error", payload);
+      }),
+    );
+
+    try {
+      if (this.speakingPermission && this.#settings.micOn) {
+        const permissionGranted = await nativeVoice.requestMicrophonePermission();
+        if (!permissionGranted) this.#settings.micOn = false;
+      }
+      const outputDeviceId = this.#settings.preferredAudioOutputDevice;
+      const outputDeviceLabel = outputDeviceId
+        ? (await navigator.mediaDevices.enumerateDevices().catch(() => []))
+            .find((device) => device.deviceId === outputDeviceId)?.label
+        : undefined;
+      const inputDeviceId = this.#settings.preferredAudioInputDevice;
+      const inputDeviceLabel = inputDeviceId
+        ? (await navigator.mediaDevices.enumerateDevices().catch(() => []))
+            .find((device) => device.deviceId === inputDeviceId)?.label
+        : undefined;
+      const routeLabel = (outputDeviceLabel || inputDeviceLabel)?.toLowerCase() ?? "";
+      const audioOutputRoute = routeLabel.includes("bluetooth")
+        ? "bluetooth"
+        : routeLabel.includes("earpiece")
+          ? "earpiece"
+          : routeLabel.includes("speaker")
+            ? "speaker"
+            : routeLabel.includes("wired") || routeLabel.includes("headset")
+              ? "wired"
+              : "default";
+      const preferredCamera = this.#settings.preferredVideoDevice;
+      const cameraDeviceLabel = preferredCamera
+        ? (await navigator.mediaDevices.enumerateDevices().catch(() => []))
+            .find((device) => device.deviceId === preferredCamera)?.label
+        : undefined;
+      const cameraPosition = cameraDeviceLabel?.toLowerCase().includes("back")
+        ? "back"
+        : "front";
+      const selected = await this.probeNode();
+      if (!auth) auth = await channel.joinCall(selected);
+      const connected = await nativeVoice.connect(auth.url, auth.token, {
+        micOn: this.speakingPermission && this.#settings.micOn,
+        echoCancellation: this.#settings.echoCancellation,
+        noiseSuppression: this.#settings.noiseSupression !== "disabled",
+        autoGainControl: this.#settings.autoGainControl,
+        inputVolume: this.#settings.inputVolume,
+        outputVolume: this.#settings.outputVolume,
+        audioOutputRoute,
+        cameraPosition,
+        screenShareQuality: this.#settings.screenShareQuality,
+        screenShareAudio: this.#settings.screenShareAudio,
+      });
+      if (!connected) throw new Error("Native LiveKit connection failed");
+      this.sound.playSound("userJoinVoice");
+    } catch (error) {
+      this.androidNativeActive = false;
+      this.androidVoiceUnsubscribers.forEach((unsubscribe) => unsubscribe());
+      this.androidVoiceUnsubscribers = [];
+      this.#setState("DISCONNECTED");
+      this.onErr(error);
+    }
+  }
+
   disconnect() {
     this.device.releaseWakeLock();
+
+    if (this.androidNativeActive) {
+      this.androidNativeActive = false;
+      this.androidVoiceUnsubscribers.forEach((unsubscribe) => unsubscribe());
+      this.androidVoiceUnsubscribers = [];
+      void window.native?.android?.voice?.disconnect();
+      batch(() => {
+        this.#setState("READY");
+        this.#setRoom(undefined);
+        this.#setChannel(undefined);
+        this.#setLayout();
+        this.#setVideo(false);
+        this.#setScreenshare(false);
+        this.#setAndroidParticipants([]);
+        this.vidTracks = () => [];
+      });
+      this.sound.playSound("userLeaveVoice");
+      return;
+    }
 
     try {
       void this.stopAndroidScreenShare();
@@ -378,6 +588,21 @@ class Voice {
 
   async toggleDeafen(fromMute?: boolean) {
     try {
+      if (this.androidNativeActive) {
+        const nextDeafened = !this.#settings.deafen;
+        if (nextDeafened) {
+          await window.native.android?.voice?.setMicrophoneEnabled(false);
+        } else if (this.#settings.micOn || fromMute) {
+          await window.native.android?.voice?.setMicrophoneEnabled(true);
+          this.#settings.micOn = true;
+        }
+        await window.native.android?.voice?.setDeafened(nextDeafened);
+        this.#settings.deafen = nextDeafened;
+        if (fromMute) this.#settings.micOn = !nextDeafened;
+        this.sound.playSound(nextDeafened ? "deafen" : "undeafen");
+        return;
+      }
+
       const room = this.room();
       if (!room) throw "invalid state";
       await room.localParticipant.setMicrophoneEnabled(
@@ -406,6 +631,15 @@ class Voice {
     }
 
     try {
+      if (this.androidNativeActive) {
+        const enabled = !this.#settings.micOn;
+        const updated = await window.native.android?.voice?.setMicrophoneEnabled(enabled);
+        if (!updated) return;
+        this.#settings.micOn = enabled;
+        this.sound.playSound(enabled ? "unmute" : "mute");
+        return;
+      }
+
       const room = this.room();
       if (!room) throw "invalid state";
       await room.localParticipant.setMicrophoneEnabled(
@@ -426,6 +660,14 @@ class Voice {
 
   async toggleCamera() {
     try {
+      if (this.androidNativeActive) {
+        const enabled = !this.video();
+        const updated = await window.native.android?.voice?.setCameraEnabled(enabled);
+        if (!updated) return;
+        this.#setVideo(enabled);
+        return;
+      }
+
       const room = this.room();
       if (!room) throw "invalid state";
       await room.localParticipant.setCameraEnabled(
@@ -591,6 +833,24 @@ class Voice {
   }
 
   async toggleScreenshare() {
+    if (this.androidNativeActive) {
+      if (this.screenShareStopGuard) return;
+      this.screenShareStopGuard = true;
+      try {
+        const enabled = !this.screenshare();
+        const started = await window.native.android?.voice?.setScreenShareEnabled(enabled);
+        if (started) {
+          this.#setScreenshare(enabled);
+          this.sound.playSound(enabled ? "streamStart" : "streamEnd");
+        }
+      } catch (error) {
+        this.onErr(error);
+      } finally {
+        this.screenShareStopGuard = false;
+      }
+      return;
+    }
+
     const room = this.room();
     if (!room) throw "invalid state";
 
@@ -614,7 +874,7 @@ class Voice {
       this.screenShareStopGuard = true;
       try {
         const started = await window.native.android.startScreenShare({
-          audio: !!this.#settings.screenShareAudio,
+          audio: false,
         });
         if (started) {
           const published = await this.publishAndroidScreenShare(room);
@@ -817,6 +1077,10 @@ class Voice {
     );
   }
 
+  toggleNativeFocus(trackSid: string) {
+    this.#setFocus((current) => (current === trackSid ? undefined : trackSid));
+  }
+
   isFocus(t: TrackReferenceOrPlaceholder) {
     return this.trackId(t) === this.focusId();
   }
@@ -856,6 +1120,10 @@ class Voice {
     return !!this.channel()?.havePermission("Listen");
   }
 
+  get isAndroidNativeActive() {
+    return this.androidNativeActive;
+  }
+
   get speakingPermission() {
     return !!this.channel()?.havePermission("Speak");
   }
@@ -891,7 +1159,9 @@ export function VoiceContext(props: { children: JSX.Element }) {
       <RoomContext.Provider value={voice.room}>
         <VoiceCallCardContext>{props.children}</VoiceCallCardContext>
         <InRoom>
-          <RoomAudioManager />
+            <Show when={voice.isAndroidNativeActive} fallback={<RoomAudioManager />}>
+              <AndroidNativeAudioManager />
+            </Show>
         </InRoom>
       </RoomContext.Provider>
     </voiceContext.Provider>

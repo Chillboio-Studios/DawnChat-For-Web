@@ -19,7 +19,7 @@ export function InRoom(props: {
   return (
     <Show
       when={
-        room?.() &&
+        (voice.isAndroidNativeActive || room?.()) &&
         voice.state() === "CONNECTED" &&
         (!props.channelId || props.channelId === voice.channel()?.id)
       }

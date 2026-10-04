@@ -20,6 +20,11 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
   const cameraDevices = useMediaDeviceSelect({ kind: "videoinput" });
 
   const switchCamera = async () => {
+    if (voice.isAndroidNativeActive) {
+      await window.native.android?.voice?.switchCamera();
+      return;
+    }
+
     const devices = cameraDevices
       .devices()
       .filter((device) => device.deviceId !== "default");
@@ -138,9 +143,10 @@ export function VoiceCallCardActions(props: { size: "xs" | "sm" }) {
       <Show
         when={
           limits().video &&
-          cameraDevices
-            .devices()
-            .filter((device) => device.deviceId !== "default").length > 1
+          (voice.isAndroidNativeActive ||
+            cameraDevices
+              .devices()
+              .filter((device) => device.deviceId !== "default").length > 1)
         }
       >
         <IconButton

@@ -2,8 +2,48 @@ export type AndroidBridge = {
   platformVersion: number;
   call(method: string, args?: unknown): Promise<unknown>;
   on(event: string, cb: (payload: unknown) => void): () => void;
+  voice?: {
+    requestMicrophonePermission(): Promise<boolean>;
+    connect(url: string, token: string, settings: Record<string, unknown>): Promise<boolean>;
+    disconnect(): Promise<boolean>;
+    setMicrophoneEnabled(enabled: boolean): Promise<boolean>;
+    setCameraEnabled(enabled: boolean): Promise<boolean>;
+    updateAudioSettings(settings: Record<string, unknown>): Promise<boolean>;
+    switchCamera(): Promise<boolean>;
+    setDeafened(enabled: boolean): Promise<boolean>;
+    setOutputVolume(volume: number): Promise<boolean>;
+    setOutputRoute(route: string): Promise<boolean>;
+    setScreenShareEnabled(enabled: boolean): Promise<boolean>;
+  };
   startScreenShare?(options?: { audio?: boolean }): Promise<boolean>;
   stopScreenShare?(): Promise<boolean>;
+};
+
+export type NativeVoiceTrack = {
+  sid: string;
+  source: string;
+  kind: string;
+  muted: boolean;
+  subscribed: boolean;
+};
+
+export type NativeVoiceParticipant = {
+  identity: string;
+  sid: string;
+  name: string;
+  speaking: boolean;
+  microphoneEnabled: boolean;
+  cameraEnabled: boolean;
+  screenShareEnabled: boolean;
+  tracks: NativeVoiceTrack[];
+};
+
+export type NativeVoiceState = {
+  state: "connected" | "connecting" | "reconnecting" | "disconnected";
+  localIdentity?: string;
+  localTracks?: NativeVoiceTrack[];
+  participants?: NativeVoiceParticipant[];
+  speakers?: string[];
 };
 
 export function isAndroidShell(): boolean {

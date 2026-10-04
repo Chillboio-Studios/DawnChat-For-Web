@@ -5,7 +5,11 @@ import { TrackLoop } from "solid-livekit-components";
 import { styled } from "styled-system/jsx";
 
 import { useDevice } from "@revolt/common";
-import { InRoom, useVoice } from "@revolt/rtc";
+import {
+  AndroidNativeParticipants,
+  InRoom,
+  useVoice,
+} from "@revolt/rtc";
 import { IconButton } from "@revolt/ui/components/design";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
 import { scrollableStyles } from "@revolt/ui/directives";
@@ -113,15 +117,25 @@ function Participants() {
   let callRef: HTMLDivElement | undefined;
 
   const tileWidth = () => {
-    const vidWidth = Math.round(
-      100 / (voice.vidTracks().length + testTrackCount),
+    const nativeTrackCount = voice.androidParticipants().reduce(
+      (count, participant) =>
+        count +
+        1 +
+        participant.tracks.filter(
+          (track) => track.source.replaceAll("_", "") === "screenshare",
+        ).length,
+      0,
     );
+    const trackCount = voice.isAndroidNativeActive
+      ? nativeTrackCount
+      : voice.vidTracks().length + testTrackCount;
+    const vidWidth = Math.round(100 / Math.max(1, trackCount));
     return `max(${TILE_MIN_WIDTH}, ${vidWidth}% - var(--gap-md))`;
   };
 
   // Clear out any focus when the track that was focused is no longer available.
   createEffect(() => {
-    if (!voice.focusTrack()) voice.toggleFocus();
+    if (!voice.isAndroidNativeActive && !voice.focusTrack()) voice.toggleFocus();
   });
 
   onMount(() => {
@@ -167,11 +181,18 @@ function Participants() {
           class={voice.focusId() ? scrollableStyles({ direction: "x" }) : ""}
           style={{ "--vc-tile-width": tileWidth() }}
         >
-          <TrackLoop
-            tracks={() => voice.vidTracks().filter((t) => !voice.isFocus(t))}
+          <Show
+            when={voice.isAndroidNativeActive}
+            fallback={
+              <TrackLoop
+                tracks={() => voice.vidTracks().filter((t) => !voice.isFocus(t))}
+              >
+                {() => <ParticipantTile />}
+              </TrackLoop>
+            }
           >
-            {() => <ParticipantTile />}
-          </TrackLoop>
+            <AndroidNativeParticipants excludeFocused={!!voice.focusId()} />
+          </Show>
           <For each={Array(testTrackCount)}>
             {() => (
               <div
@@ -192,14 +213,23 @@ function FocusedParticipant() {
   const voice = useVoice();
 
   return (
-    <Show when={voice.focusTrack()}>
-      <TrackLoop tracks={() => [voice.focusTrack()!]}>
-        {() => (
-          <FocusBox>
-            <ParticipantTile focus />
-          </FocusBox>
-        )}
-      </TrackLoop>
+    <Show when={voice.isAndroidNativeActive ? voice.focusId() : voice.focusTrack()}>
+      <Show
+        when={voice.isAndroidNativeActive}
+        fallback={
+          <TrackLoop tracks={() => [voice.focusTrack()!] }>
+            {() => (
+              <FocusBox>
+                <ParticipantTile focus />
+              </FocusBox>
+            )}
+          </TrackLoop>
+        }
+      >
+        <FocusBox>
+          <AndroidNativeParticipants focusedOnly />
+        </FocusBox>
+      </Show>
     </Show>
   );
 }

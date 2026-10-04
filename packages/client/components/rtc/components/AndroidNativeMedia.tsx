@@ -1,0 +1,256 @@
+import { createMemo, createSignal, For, onCleanup, Show } from "solid-js";
+import { useUser } from "@revolt/markdown/users";
+import { useState } from "@revolt/state";
+import { useVoice } from "../state";
+import { Avatar } from "@revolt/ui/components/design";
+import { Row } from "@revolt/ui/components/layout";
+import { OverflowingText } from "@revolt/ui/components/utils";
+import { Symbol } from "@revolt/ui/components/utils/Symbol";
+import { VoiceStatefulUserIcons } from "@revolt/ui/components/features/voice/VoiceStatefulUserIcons";
+import { NativeVoiceParticipant } from "../../native/android";
+import { tile } from "@revolt/ui/components/features/voice/callCard/ParticipantTile";
+
+function isScreenShare(source: string) {
+  return source.replaceAll("_", "") === "screenshare";
+}
+
+export function AndroidNativeParticipants(props: {
+  focusedOnly?: boolean;
+  excludeFocused?: boolean;
+}) {
+  const voice = useVoice();
+  const tiles = createMemo(() =>
+    voice.androidParticipants().flatMap((participant) => {
+      const camera = participant.tracks.find((track) => track.source === "camera");
+      const screenShares = participant.tracks.filter((track) =>
+        isScreenShare(track.source),
+      );
+      return [
+        { participant, sid: camera?.sid, source: "camera" },
+        ...screenShares.map((track) => ({
+          participant,
+          sid: track.sid,
+          source: "screen_share",
+        })),
+      ];
+    }).filter((entry, index, entries) => {
+      const focusedSid = voice.focusId() ?? entries[0]?.sid;
+      const focused = entry.sid !== undefined && entry.sid === focusedSid;
+      return props.focusedOnly ? focused : !props.excludeFocused || !focused;
+    }),
+  );
+
+  return (
+    <For each={tiles()}>
+      {(entry) => (
+        <AndroidNativeParticipantTile
+          participant={entry.participant}
+          sid={entry.sid}
+          source={entry.source}
+        />
+      )}
+    </For>
+  );
+}
+
+function AndroidNativeParticipantTile(props: {
+  participant: NativeVoiceParticipant;
+  sid?: string;
+  source: string;
+}) {
+  const voice = useVoice();
+  const user = useUser(props.participant.identity);
+  const [frame, setFrame] = createSignal("");
+  const android = window.native?.android;
+  const removeListener = android?.on("voice.videoFrame", (payload) => {
+    const data = payload as {
+      sid?: string;
+      data?: string;
+      width?: number;
+      height?: number;
+    };
+    if (data.sid === props.sid && data.data) {
+      setFrame(`data:image/jpeg;base64,${data.data}`);
+    }
+  });
+  onCleanup(() => removeListener?.());
+
+  const videoEnabled = () =>
+    props.source === "camera"
+      ? props.participant.cameraEnabled
+      : props.participant.screenShareEnabled;
+  const hasVideo = () => !!props.sid && videoEnabled() && !!frame();
+
+  return (
+    <Show when={props.source !== "screen_share" || videoEnabled()}>
+      <div
+        class={
+          tile({
+            video: hasVideo() || props.source === "screen_share",
+            focus: props.sid !== undefined && props.sid === voice.focusId(),
+            speaking: props.source === "camera" && props.participant.speaking,
+          }) +
+          " vc_tile"
+        }
+        onClick={() => props.sid && voice.toggleNativeFocus(props.sid)}
+      >
+        <Show when={hasVideo()} fallback={
+          <div
+            style={{
+              "grid-area": "1/1",
+              display: "grid",
+              "place-items": "center",
+              overflow: "hidden",
+            }}
+          >
+            <Avatar
+              src={user().avatar}
+              fallback={user().username}
+              size={48}
+              interactive={false}
+            />
+          </div>
+        }>
+          <img
+            src={frame()}
+            alt=""
+            style={{
+              "grid-area": "1/1",
+              width: "100%",
+              height: "100%",
+              "object-fit": "contain",
+            }}
+          />
+        </Show>
+        <div
+          style={{
+            "grid-area": "1/1",
+            display: "flex",
+            "align-items": "end",
+            "justify-content": "space-between",
+            padding: "var(--gap-md) var(--gap-lg)",
+            "min-width": 0,
+            opacity: 1,
+          }}
+        >
+          <OverflowingText>{user().username}</OverflowingText>
+          <Row gap="md">
+            <Show when={props.source === "screen_share"}>
+              <Symbol size={18}>screen_share</Symbol>
+            </Show>
+            <Show when={props.source === "camera"}>
+              <VoiceStatefulUserIcons
+                userId={props.participant.identity}
+                muted={!props.participant.microphoneEnabled}
+                camera={props.participant.cameraEnabled}
+              />
+            </Show>
+          </Row>
+        </div>
+      </div>
+    </Show>
+  );
+}
+
+export function AndroidNativeAudioManager() {
+  const state = useState();
+  const voice = useVoice();
+  const android = window.native?.android;
+  let audioContext: AudioContext | undefined;
+  const nextStartBySid = new Map<string, number>();
+  let audioUnlocked = false;
+
+  const unlockAudio = () => {
+    audioUnlocked = true;
+    if (audioContext?.state === "suspended") void audioContext.resume();
+  };
+  document.addEventListener("pointerdown", unlockAudio);
+  document.addEventListener("keydown", unlockAudio);
+
+  const removeListener = android?.on("voice.audioFrame", (payload) => {
+    const frame = payload as {
+      identity?: string;
+      sid?: string;
+      source?: string;
+      data?: string;
+      sampleRate?: number;
+      channels?: number;
+      bitsPerSample?: number;
+    };
+    if (
+      !frame.identity ||
+      !frame.sid ||
+      !frame.data ||
+      frame.bitsPerSample !== 16 ||
+      voice.deafen()
+    ) {
+      return;
+    }
+
+    const screenAudio = frame.source === "screen_share_audio";
+    const muted = screenAudio
+      ? state.voice.getScreenShareMuted(frame.identity)
+      : state.voice.getUserMuted(frame.identity);
+    if (muted) return;
+
+    const volume =
+      state.voice.outputVolume *
+      (screenAudio
+        ? state.voice.getScreenShareVolume(frame.identity)
+        : state.voice.getUserVolume(frame.identity));
+    if (volume <= 0) return;
+
+    audioContext ??= new AudioContext({ latencyHint: "interactive" });
+    if (audioUnlocked && audioContext.state === "suspended") {
+      void audioContext.resume();
+    }
+    const binary = atob(frame.data);
+    const sampleCount = Math.floor(binary.length / 2);
+    const channelCount = Math.max(1, frame.channels ?? 1);
+    const frameCount = Math.floor(sampleCount / channelCount);
+    if (!frameCount) return;
+
+    const buffer = audioContext.createBuffer(
+      channelCount,
+      frameCount,
+      frame.sampleRate || 48000,
+    );
+    for (let channel = 0; channel < channelCount; channel++) {
+      const output = buffer.getChannelData(channel);
+      for (let sample = 0; sample < frameCount; sample++) {
+        const index = (sample * channelCount + channel) * 2;
+        const pcm = binary.charCodeAt(index) | (binary.charCodeAt(index + 1) << 8);
+        const signed = pcm >= 0x8000 ? pcm - 0x10000 : pcm;
+        output[sample] = signed / 32768;
+      }
+    }
+
+    const source = audioContext.createBufferSource();
+    const gain = audioContext.createGain();
+    gain.gain.value = volume;
+    source.buffer = buffer;
+    source.connect(gain);
+    gain.connect(audioContext.destination);
+    const currentTime = audioContext.currentTime;
+    const startAt = Math.max(
+      currentTime + 0.01,
+      nextStartBySid.get(frame.sid) ?? currentTime,
+    );
+    source.start(startAt);
+    nextStartBySid.set(frame.sid, startAt + buffer.duration);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+    };
+  });
+
+  onCleanup(() => {
+    removeListener?.();
+    document.removeEventListener("pointerdown", unlockAudio);
+    document.removeEventListener("keydown", unlockAudio);
+    nextStartBySid.clear();
+    void audioContext?.close();
+  });
+
+  return null;
+}

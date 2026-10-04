@@ -5,6 +5,10 @@ export { useVoice, VoiceContext } from "./state";
 
 export { InRoom } from "./components/InRoom";
 export { RoomAudioManager } from "./components/RoomAudioManager";
+export {
+  AndroidNativeAudioManager,
+  AndroidNativeParticipants,
+} from "./components/AndroidNativeMedia";
 export { stoatSinkName } from "./virtualMic";
 
 const mediaDevices = navigator.mediaDevices;
