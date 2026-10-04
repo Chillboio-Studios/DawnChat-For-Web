@@ -1,4 +1,5 @@
 import { useDevice } from "@revolt/common";
+import { UserContextMenu } from "@revolt/app";
 import { useUser } from "@revolt/markdown/users";
 import { useState } from "@revolt/state";
 import { Avatar } from "@revolt/ui/components/design";
@@ -7,7 +8,15 @@ import { VoiceStatefulUserIcons } from "@revolt/ui/components/features/voice/Voi
 import { Row } from "@revolt/ui/components/layout";
 import { OverflowingText } from "@revolt/ui/components/utils";
 import { Symbol } from "@revolt/ui/components/utils/Symbol";
-import { createMemo, createSignal, For, onCleanup, Show } from "solid-js";
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  onCleanup,
+  onMount,
+  Show,
+} from "solid-js";
 import { NativeVoiceParticipant } from "../../native/android";
 import { useVoice } from "../state";
 import { VideoZoomSurface } from "./VideoZoomSurface";
@@ -107,6 +116,13 @@ function AndroidNativeParticipantTile(props: {
     width: 0,
     height: 0,
   });
+  onMount(() => {
+    if (!device.hasTouch) return;
+    document.body.dataset.longPressDelay = "650";
+    // @ts-expect-error This package installs the browser's long-press event.
+    void import("long-press-event");
+  });
+  let hasLoggedFrame = false;
   const android = window.native?.android;
   const removeListener = android?.on("voice.videoFrame", (payload) => {
     const data = payload as {
@@ -116,6 +132,14 @@ function AndroidNativeParticipantTile(props: {
       height?: number;
     };
     if (data.sid === props.sid && data.data) {
+      if (!hasLoggedFrame) {
+        hasLoggedFrame = true;
+        console.info("[rtc] native video frame received", {
+          sid: data.sid,
+          width: data.width,
+          height: data.height,
+        });
+      }
       setFrame(`data:image/jpeg;base64,${data.data}`);
       setFrameDimensions({ width: data.width ?? 0, height: data.height ?? 0 });
     }
@@ -152,6 +176,9 @@ function AndroidNativeParticipantTile(props: {
       }
     >
       <div
+        ref={(element) => {
+          if (device.hasTouch) element.dataset.longPressDelay = "650";
+        }}
         class={
           tile({
             video: hasVideo() || props.source === "screen_share",
@@ -180,6 +207,17 @@ function AndroidNativeParticipantTile(props: {
         }}
         onClick={() => {
           if (!zoomed() && props.sid) voice.toggleNativeFocus(props.sid);
+        }}
+        use:floating={{
+          contextMenuHandler: "long-press" as "contextmenu",
+          contextMenu: () => (
+            <UserContextMenu
+              user={user().user!}
+              member={user().member}
+              inVoice={props.source === "camera"}
+              isScreenshare={props.source === "screen_share"}
+            />
+          ),
         }}
       >
         <Show
@@ -270,9 +308,34 @@ export function AndroidNativeAudioManager() {
   const voice = useVoice();
   const android = window.native?.android;
   const isAndroid = window.native?.platform === "android" && !!android;
+  const sentAudioSettings = new Map<string, string>();
   let audioContext: AudioContext | undefined;
   const nextStartBySid = new Map<string, number>();
   let audioUnlocked = false;
+
+  createEffect(() => {
+    if (!isAndroid || !voice.isAndroidNativeActive) {
+      sentAudioSettings.clear();
+      return;
+    }
+
+    for (const participant of voice.androidParticipants()) {
+      const settings = {
+        identity: participant.identity,
+        userVolume: state.voice.getUserVolume(participant.identity),
+        userMuted: state.voice.getUserMuted(participant.identity),
+        screenShareVolume: state.voice.getScreenShareVolume(participant.identity),
+        screenShareMuted: state.voice.getScreenShareMuted(participant.identity),
+      };
+      const serialized = JSON.stringify(settings);
+      if (sentAudioSettings.get(participant.identity) === serialized) continue;
+
+      sentAudioSettings.set(participant.identity, serialized);
+      void android?.voice?.setParticipantAudioSettings(settings).catch((error: unknown) => {
+        console.warn("Could not update native participant audio settings", error);
+      });
+    }
+  });
 
   const unlockAudio = () => {
     audioUnlocked = true;

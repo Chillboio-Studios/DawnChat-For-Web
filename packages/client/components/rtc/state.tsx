@@ -538,6 +538,7 @@ class Voice {
       if (!auth) auth = await channel.joinCall(selected);
       const connected = await nativeVoice.connect(auth.url, auth.token, {
         micOn: this.speakingPermission && this.#settings.micOn,
+        deafen: this.#settings.deafen,
         echoCancellation: this.#settings.echoCancellation,
         noiseSuppression: this.#settings.noiseSupression !== "disabled",
         autoGainControl: this.#settings.autoGainControl,

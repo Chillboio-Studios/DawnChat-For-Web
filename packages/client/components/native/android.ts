@@ -16,6 +16,13 @@ export type AndroidBridge = {
     switchCamera(): Promise<boolean>;
     setDeafened(enabled: boolean): Promise<boolean>;
     setOutputVolume(volume: number): Promise<boolean>;
+    setParticipantAudioSettings(settings: {
+      identity: string;
+      userVolume: number;
+      userMuted: boolean;
+      screenShareVolume: number;
+      screenShareMuted: boolean;
+    }): Promise<boolean>;
     setOutputRoute(route: string): Promise<boolean>;
     setScreenShareEnabled(
       enabled: boolean,
