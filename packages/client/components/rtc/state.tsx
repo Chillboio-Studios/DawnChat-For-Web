@@ -521,6 +521,8 @@ class Voice {
       const cameraPosition = cameraDeviceLabel?.toLowerCase().includes("back")
         ? "back"
         : "front";
+      const videoResolution = this.limits().video_resolution;
+      const videoAspectRatio = this.limits().video_aspect_ratio;
       const selected = await this.probeNode();
       if (!auth) auth = await channel.joinCall(selected);
       const connected = await nativeVoice.connect(auth.url, auth.token, {
@@ -532,6 +534,8 @@ class Voice {
         outputVolume: this.#settings.outputVolume,
         audioOutputRoute,
         cameraPosition,
+        videoResolution,
+        videoAspectRatio,
         screenShareQuality: this.#settings.screenShareQuality,
         screenShareAudio: this.#settings.screenShareAudio,
       });
