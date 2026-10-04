@@ -147,6 +147,19 @@ export function VoiceCallCardContext(props: { children: JSX.Element }) {
     } else if (!mode()) setFloat("tr");
   });
 
+  createEffect(() => {
+    if (inCall()) return;
+
+    const floating = document.getElementById("floating");
+    const fullscreenElement = document.fullscreenElement;
+    if (floating && fullscreenElement && floating.contains(fullscreenElement)) {
+      void document.exitFullscreen().catch((error: unknown) => {
+        console.debug("Could not exit call fullscreen", error);
+      });
+    }
+    voice.resetLayout();
+  });
+
   const channel = () => info()?.channel;
 
   function setFloat(float: FloatType) {
@@ -162,11 +175,19 @@ export function VoiceCallCardContext(props: { children: JSX.Element }) {
   onCleanup(resetEvents);
 
   onMount(() => {
-    document
-      .getElementById("floating")
-      ?.addEventListener("fullscreenchange", () => {
-        if (!document.fullscreenElement) voice.resetLayout();
-      });
+    const onFullscreenChange = () => {
+      if (
+        !document.fullscreenElement &&
+        voice.layout() === "fullscreen"
+      ) {
+        voice.resetLayout();
+      }
+    };
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    onCleanup(() =>
+      document.removeEventListener("fullscreenchange", onFullscreenChange),
+    );
   });
 
   return (
