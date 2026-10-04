@@ -4,6 +4,10 @@ export type AndroidBridge = {
   on(event: string, cb: (payload: unknown) => void): () => void;
   voice?: {
     requestMicrophonePermission(): Promise<boolean>;
+    requestCallPermissions(options: {
+      microphone: boolean;
+      camera: boolean;
+    }): Promise<{ microphone: boolean; camera: boolean }>;
     connect(url: string, token: string, settings: Record<string, unknown>): Promise<boolean>;
     disconnect(): Promise<boolean>;
     setMicrophoneEnabled(enabled: boolean): Promise<boolean>;

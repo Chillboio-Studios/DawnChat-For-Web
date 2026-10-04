@@ -1213,10 +1213,11 @@ export function VoiceContext(props: { children: JSX.Element }) {
     <voiceContext.Provider value={voice}>
       <RoomContext.Provider value={voice.room}>
         <VoiceCallCardContext>{props.children}</VoiceCallCardContext>
+        <AndroidNativeAudioManager />
         <InRoom>
-            <Show when={voice.isAndroidNativeActive} fallback={<RoomAudioManager />}>
-              <AndroidNativeAudioManager />
-            </Show>
+          <Show when={!voice.isAndroidNativeActive}>
+            <RoomAudioManager />
+          </Show>
         </InRoom>
       </RoomContext.Provider>
     </voiceContext.Provider>

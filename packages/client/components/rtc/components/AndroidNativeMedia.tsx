@@ -269,16 +269,24 @@ export function AndroidNativeAudioManager() {
   const state = useState();
   const voice = useVoice();
   const android = window.native?.android;
+  const isAndroid = window.native?.platform === "android" && !!android;
   let audioContext: AudioContext | undefined;
   const nextStartBySid = new Map<string, number>();
   let audioUnlocked = false;
 
   const unlockAudio = () => {
     audioUnlocked = true;
-    if (audioContext?.state === "suspended") void audioContext.resume();
+    audioContext ??= new AudioContext({ latencyHint: "interactive" });
+    if (audioContext.state === "suspended") {
+      void audioContext.resume().catch((error: unknown) => {
+        console.debug("Could not resume native voice audio", error);
+      });
+    }
   };
-  document.addEventListener("pointerdown", unlockAudio);
-  document.addEventListener("keydown", unlockAudio);
+  if (isAndroid) {
+    document.addEventListener("pointerdown", unlockAudio);
+    document.addEventListener("keydown", unlockAudio);
+  }
 
   const removeListener = android?.on("voice.audioFrame", (payload) => {
     const frame = payload as {
@@ -313,9 +321,16 @@ export function AndroidNativeAudioManager() {
         : state.voice.getUserVolume(frame.identity));
     if (volume <= 0) return;
 
-    audioContext ??= new AudioContext({ latencyHint: "interactive" });
-    if (audioUnlocked && audioContext.state === "suspended") {
-      void audioContext.resume();
+    if (!audioContext) {
+      audioContext = new AudioContext({ latencyHint: "interactive" });
+    }
+    if (audioContext.state !== "running") {
+      if (audioUnlocked) {
+        void audioContext.resume().catch((error: unknown) => {
+          console.debug("Could not resume native voice audio", error);
+        });
+      }
+      return;
     }
     const binary = atob(frame.data);
     const sampleCount = Math.floor(binary.length / 2);
@@ -360,8 +375,10 @@ export function AndroidNativeAudioManager() {
 
   onCleanup(() => {
     removeListener?.();
-    document.removeEventListener("pointerdown", unlockAudio);
-    document.removeEventListener("keydown", unlockAudio);
+    if (isAndroid) {
+      document.removeEventListener("pointerdown", unlockAudio);
+      document.removeEventListener("keydown", unlockAudio);
+    }
     nextStartBySid.clear();
     void audioContext?.close();
   });
