@@ -111,7 +111,8 @@ class Voice {
   private limits;
   private screenShareTracks: Set<string>;
   private screenShareStopGuard = false;
-  private androidNativeActive = false;
+  #androidNativeActive: Accessor<boolean>;
+  #setAndroidNativeActive: Setter<boolean>;
   private androidVoiceUnsubscribers: Array<() => void> = [];
   private androidScreenShareTrack?: LocalVideoTrack;
   private androidScreenShareCleanup?: () => void;
@@ -148,6 +149,10 @@ class Voice {
     const [state, setState] = createSignal<State>("READY");
     this.state = state;
     this.#setState = setState;
+
+    const [androidNativeActive, setAndroidNativeActive] = createSignal(false);
+    this.#androidNativeActive = androidNativeActive;
+    this.#setAndroidNativeActive = setAndroidNativeActive;
 
     this.deafen = () => voiceSettings.deafen;
     this.microphone = () => voiceSettings.micOn && !voiceSettings.deafen;
@@ -243,7 +248,7 @@ class Voice {
       setEchoCancellation(getSettings().echoCancellation ?? true);
       setAutoGainControl(getSettings().autoGainControl ?? true);
       setNoiseSuppression(getSettings().noiseSupression ?? "browser");
-      if (this.androidNativeActive) {
+      if (this.#androidNativeActive()) {
         void window.native?.android?.voice?.updateAudioSettings({
           echoCancellation: getSettings().echoCancellation ?? true,
           autoGainControl: getSettings().autoGainControl ?? true,
@@ -426,7 +431,7 @@ class Voice {
       this.#setScreenshare(false);
       this.#setAndroidParticipants([]);
     });
-    this.androidNativeActive = true;
+    this.#setAndroidNativeActive(true);
 
     this.androidVoiceUnsubscribers.push(
       android.on("voice.state", (payload) => {
@@ -547,7 +552,7 @@ class Voice {
       if (!connected) throw new Error("Native LiveKit connection failed");
       this.sound.playSound("userJoinVoice");
     } catch (error) {
-      this.androidNativeActive = false;
+      this.#setAndroidNativeActive(false);
       this.androidVoiceUnsubscribers.forEach((unsubscribe) => unsubscribe());
       this.androidVoiceUnsubscribers = [];
       this.#setState("DISCONNECTED");
@@ -558,8 +563,8 @@ class Voice {
   disconnect() {
     this.device.releaseWakeLock();
 
-    if (this.androidNativeActive) {
-      this.androidNativeActive = false;
+    if (this.#androidNativeActive()) {
+      this.#setAndroidNativeActive(false);
       this.androidVoiceUnsubscribers.forEach((unsubscribe) => unsubscribe());
       this.androidVoiceUnsubscribers = [];
       void window.native?.android?.voice?.disconnect();
@@ -603,7 +608,7 @@ class Voice {
 
   async toggleDeafen(fromMute?: boolean) {
     try {
-      if (this.androidNativeActive) {
+      if (this.#androidNativeActive()) {
         const nextDeafened = !this.#settings.deafen;
         if (nextDeafened) {
           await window.native.android?.voice?.setMicrophoneEnabled(false);
@@ -646,7 +651,7 @@ class Voice {
     }
 
     try {
-      if (this.androidNativeActive) {
+      if (this.#androidNativeActive()) {
         const enabled = !this.#settings.micOn;
         const updated = await window.native.android?.voice?.setMicrophoneEnabled(enabled);
         if (!updated) return;
@@ -675,7 +680,7 @@ class Voice {
 
   async toggleCamera() {
     try {
-      if (this.androidNativeActive) {
+      if (this.#androidNativeActive()) {
         const enabled = !this.video();
         const updated = await window.native.android?.voice?.setCameraEnabled(enabled);
         if (!updated) return;
@@ -848,7 +853,7 @@ class Voice {
   }
 
   async toggleScreenshare() {
-    if (this.androidNativeActive) {
+    if (this.#androidNativeActive()) {
       if (this.screenShareStopGuard) return;
       this.screenShareStopGuard = true;
       try {
@@ -1171,7 +1176,7 @@ class Voice {
   }
 
   get isAndroidNativeActive() {
-    return this.androidNativeActive;
+    return this.#androidNativeActive();
   }
 
   get speakingPermission() {
