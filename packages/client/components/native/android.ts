@@ -40,6 +40,8 @@ export type NativeVoiceParticipant = {
 
 export type NativeVoiceState = {
   state: "connected" | "connecting" | "reconnecting" | "disconnected";
+  reason?: string;
+  error?: string;
   localIdentity?: string;
   localTracks?: NativeVoiceTrack[];
   participants?: NativeVoiceParticipant[];

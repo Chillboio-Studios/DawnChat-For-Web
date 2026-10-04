@@ -14,7 +14,7 @@ import { styled } from "styled-system/jsx";
 
 import { UserContextMenu } from "@revolt/app";
 import { useUser } from "@revolt/markdown/users";
-import { InRoom } from "@revolt/rtc";
+import { InRoom, useVoice } from "@revolt/rtc";
 
 import { Avatar, Ripple, typography } from "../../design";
 import { Row } from "../../layout";
@@ -41,6 +41,7 @@ export function VoiceChannelPreview(props: { channel: Channel }) {
  * Use API as the source of truth
  */
 function VariantLive() {
+  const voice = useVoice();
   const tracks = useTracks(
     [{ source: Track.Source.Camera, withPlaceholder: true }],
     { onlySubscribed: false },
@@ -48,7 +49,24 @@ function VariantLive() {
 
   return (
     <Base>
-      <TrackLoop tracks={tracks}>{() => <ParticipantLive />}</TrackLoop>
+      <Show
+        when={voice.isAndroidNativeActive}
+        fallback={<TrackLoop tracks={tracks}>{() => <ParticipantLive />}</TrackLoop>}
+      >
+        <For each={voice.androidParticipants()}>
+          {(participant) => (
+            <CommonUser
+              userId={participant.identity}
+              speaking={participant.speaking}
+              muted={!participant.microphoneEnabled}
+              deafened={false}
+              camera={participant.cameraEnabled}
+              screenshare={participant.screenShareEnabled}
+              isLive
+            />
+          )}
+        </For>
+      </Show>
     </Base>
   );
 }

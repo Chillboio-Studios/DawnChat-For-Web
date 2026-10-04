@@ -24,11 +24,29 @@ import { VoiceCallCardStatus } from "./VoiceCallCardStatus";
 
 export function VoiceCallCardPiP() {
   const voice = useVoice();
+
+  return (
+    <MiniCard>
+      <VoiceCallCardStatus pip />
+      <Show
+        when={voice.isAndroidNativeActive}
+        fallback={
+          <BrowserPiP />
+        }
+      >
+        <AndroidNativeParticipants focusedOnly />
+      </Show>
+      <VoiceCallCardActions size="xs" />
+    </MiniCard>
+  );
+}
+
+function BrowserPiP() {
+  const voice = useVoice();
   const audTracks = useTracks(
     [{ source: Track.Source.Microphone, withPlaceholder: true }],
     { onlySubscribed: false },
   );
-
   const hasFocusVideo = () => {
     const track = voice.focusTrack();
     if (!track) return false;
@@ -43,22 +61,11 @@ export function VoiceCallCardPiP() {
   };
 
   return (
-    <MiniCard>
-      <VoiceCallCardStatus pip />
-      <Show
-        when={voice.isAndroidNativeActive}
-        fallback={
-          <Show when={!hasFocusVideo()} fallback={<MiniVideoTile />}>
-            <Row align justify grow wrap>
-              <TrackLoop tracks={audTracks}>{() => <ConnectedUser />}</TrackLoop>
-            </Row>
-          </Show>
-        }
-      >
-        <AndroidNativeParticipants focusedOnly />
-      </Show>
-      <VoiceCallCardActions size="xs" />
-    </MiniCard>
+    <Show when={!hasFocusVideo()} fallback={<MiniVideoTile />}>
+      <Row align justify grow wrap>
+        <TrackLoop tracks={audTracks}>{() => <ConnectedUser />}</TrackLoop>
+      </Row>
+    </Show>
   );
 }
 

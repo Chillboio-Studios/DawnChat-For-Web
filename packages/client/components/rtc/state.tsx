@@ -431,6 +431,12 @@ class Voice {
     this.androidVoiceUnsubscribers.push(
       android.on("voice.state", (payload) => {
         const state = payload as NativeVoiceState;
+        if (state.state === "disconnected") {
+          console.error("[rtc] native LiveKit disconnected", {
+            reason: state.reason,
+            error: state.error,
+          });
+        }
         const participants = [...(state.participants ?? [])];
         if (state.localIdentity) {
           const localTracks = state.localTracks ?? [];
