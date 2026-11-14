@@ -58,5 +58,5 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.timestamp }}
             ${{ env.IMAGE_NAME }}:sha-${{ steps.meta.outputs.sha }}
-          cache-from: type=local,src=$HOME/.cache/dawnchat-web-buildx
-          cache-to: type=local,dest=$HOME/.cache/dawnchat-web-buildx,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
