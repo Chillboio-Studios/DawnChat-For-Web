@@ -1,10 +1,10 @@
 [submodule "packages/stoat.js"]
 	path = packages/stoat.js
-	url = https://git.chillboiostudios.com/Chillboio-Studios/dawnchat.js
+	url = https://github.com/Chillboio-Studios/DawnChat.js-old
 [submodule "packages/client/assets"]
 	path = packages/client/assets
-	url = https://git.chillboiostudios.com/Chillboio-Studios-Internal/dawnchat-brand-assets
+	url = https://github.com/Chillboio-Studios/DawnChat-Brand-Assets
 	update = none
 [submodule "packages/solid-livekit-components"]
 	path = packages/solid-livekit-components
-	url = https://git.chillboiostudios.com/Chillboio-Studios-Internal/dawnchat-solid-livekit-components
+	url = https://github.com/Chillboio-Studios/DawnChat-Web-SolidJs-Livekit
